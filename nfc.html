@@ -1,0 +1,371 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALLEVANDO - Programmazione NFC</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f3f5f8;
+            font-family: Arial, sans-serif;
+            color: #202938;
+        }
+        .container {
+            max-width: 850px;
+            margin: 25px auto;
+        }
+        .panel {
+            background: white;
+            padding: 24px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 15px rgba(0,0,0,.06);
+        }
+        h1 { margin-top: 0; color: #173d32; }
+        h2 { font-size: 19px; }
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 13px;
+            margin: 8px 0 15px;
+            border: 1px solid #d5dce3;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        button {
+            border: 0;
+            border-radius: 8px;
+            padding: 13px 18px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #176b50;
+            color: white;
+        }
+        button:disabled { opacity: .5; cursor: not-allowed; }
+        .secondary { background: #e8edf0; color: #263442; }
+        .card {
+            border: 1px solid #e0e6e9;
+            border-radius: 10px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            background: #eef3f5;
+            overflow-wrap: anywhere;
+        }
+        .success { background: #e5f5eb; color: #176b36; }
+        .error { background: #fdeaea; color: #a32626; }
+        .muted { color: #687582; font-size: 14px; }
+        .hidden { display: none; }
+        .link {
+            display: block;
+            overflow-wrap: anywhere;
+            padding: 12px;
+            background: #f1f4f6;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <div class="panel">
+        <h1>ALLEVANDO Smart Breeding™</h1>
+        <h2>Programmazione schede NFC</h2>
+        <p class="muted">
+            Associa una scheda NFC a una covata e genera il collegamento
+            da scrivere fisicamente sulla scheda.
+        </p>
+    </div>
+
+    <div class="panel" id="loginPanel">
+        <h2>Accesso allevatore</h2>
+        <form id="loginForm">
+            <label>Email</label>
+            <input type="email" id="email" required>
+            <label>Password</label>
+            <input type="password" id="password" required>
+            <button type="submit" id="loginButton">Accedi</button>
+        </form>
+        <div id="loginMessage" class="status hidden"></div>
+    </div>
+
+    <div id="appPanel" class="hidden">
+        <div class="panel">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+                <h2>Le tue covate</h2>
+                <button class="secondary" id="logoutButton">Esci</button>
+            </div>
+
+            <p class="muted">
+                Seleziona la covata alla quale vuoi associare una scheda.
+            </p>
+
+            <button id="refreshButton" class="secondary">Aggiorna elenco</button>
+            <div id="listMessage" class="status hidden"></div>
+            <div id="covateList"></div>
+        </div>
+
+        <div class="panel hidden" id="resultPanel">
+            <h2>Collegamento della scheda NFC</h2>
+            <div id="resultMessage" class="status success"></div>
+            <p>Questo è il collegamento da scrivere nella scheda NFC:</p>
+            <div class="link" id="generatedLink"></div>
+
+            <div class="actions">
+                <button id="copyButton">Copia collegamento</button>
+            </div>
+
+            <h2>Come programmare la scheda</h2>
+            <ol>
+                <li>Apri un'app di scrittura NFC sul telefono, ad esempio NFC Tools.</li>
+                <li>Scegli la funzione per scrivere un URL o un indirizzo web.</li>
+                <li>Incolla il collegamento copiato qui sopra.</li>
+                <li>Avvicina la scheda NFC al telefono e completa la scrittura.</li>
+                <li>Scansiona la scheda per verificare che si apra la covata corretta.</li>
+            </ol>
+
+            <p class="muted">
+                Il collegamento identifica in modo univoco questa covata.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/supabase.js"></script>
+
+<script>
+const client = window.supabaseClient;
+
+const loginPanel = document.getElementById("loginPanel");
+const appPanel = document.getElementById("appPanel");
+const loginMessage = document.getElementById("loginMessage");
+const listMessage = document.getElementById("listMessage");
+const covateList = document.getElementById("covateList");
+const resultPanel = document.getElementById("resultPanel");
+const resultMessage = document.getElementById("resultMessage");
+const generatedLink = document.getElementById("generatedLink");
+
+let currentLink = "";
+
+function showMessage(element, message, type = "") {
+    element.textContent = message;
+    element.className = "status " + type;
+    element.classList.remove("hidden");
+}
+
+function hideMessage(element) {
+    element.classList.add("hidden");
+}
+
+function makeLink(code) {
+    return new URL(
+        "covata.html?tag=" + encodeURIComponent(code),
+        window.location.href
+    ).href;
+}
+
+async function showApp() {
+    loginPanel.classList.add("hidden");
+    appPanel.classList.remove("hidden");
+    resultPanel.classList.add("hidden");
+    await loadCovate();
+}
+
+async function checkSession() {
+    const { data, error } = await client.auth.getSession();
+
+    if (error) {
+        showMessage(loginMessage, error.message, "error");
+        return;
+    }
+
+    if (data.session) {
+        await showApp();
+    } else {
+        loginPanel.classList.remove("hidden");
+        appPanel.classList.add("hidden");
+    }
+}
+
+document.getElementById("loginForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const button = document.getElementById("loginButton");
+    button.disabled = true;
+    button.textContent = "Accesso in corso...";
+    hideMessage(loginMessage);
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    const { error } = await client.auth.signInWithPassword({
+        email,
+        password
+    });
+
+    button.disabled = false;
+    button.textContent = "Accedi";
+
+    if (error) {
+        showMessage(loginMessage, "Accesso non riuscito: " + error.message, "error");
+        return;
+    }
+
+    await showApp();
+});
+
+document.getElementById("logoutButton").addEventListener("click", async () => {
+    await client.auth.signOut();
+    resultPanel.classList.add("hidden");
+    appPanel.classList.add("hidden");
+    loginPanel.classList.remove("hidden");
+});
+
+document.getElementById("refreshButton").addEventListener("click", loadCovate);
+
+async function loadCovate() {
+    covateList.innerHTML = "";
+    hideMessage(listMessage);
+    showMessage(listMessage, "Caricamento covate...");
+
+    const { data, error } = await client.rpc("lista_covate_per_tag");
+
+    if (error) {
+        showMessage(listMessage, "Errore nel caricamento delle covate: " + error.message, "error");
+        return;
+    }
+
+    hideMessage(listMessage);
+
+    if (!Array.isArray(data) || data.length === 0) {
+        showMessage(listMessage, "Non risultano covate disponibili. Registra prima il primo uovo per una coppia.");
+        return;
+    }
+
+    data.forEach(covata => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const title = document.createElement("h2");
+        title.textContent =
+            "Coppia " + (covata.coppia || "—") +
+            " · Anno " + (covata.anno || "—") +
+            " · Covata " + covata.numero;
+
+        const details = document.createElement("p");
+        details.className = "muted";
+        details.textContent = "Gabbia: " + (covata.gabbia || "Non indicata");
+
+        const status = document.createElement("p");
+        status.textContent = covata.tag_attivo
+            ? "Scheda NFC già associata"
+            : "Nessuna scheda NFC associata";
+
+        const button = document.createElement("button");
+        button.textContent = covata.tag_attivo
+            ? "Visualizza collegamento"
+            : "Associa scheda NFC";
+
+        button.addEventListener("click", () => {
+            if (covata.tag_attivo && covata.codice_tag) {
+                currentLink = makeLink(covata.codice_tag);
+                resultMessage.textContent = "Questa covata ha già una scheda NFC attiva.";
+                resultMessage.className = "status success";
+                generatedLink.textContent = currentLink;
+                resultPanel.classList.remove("hidden");
+                resultPanel.scrollIntoView({ behavior: "smooth" });
+            } else {
+                assignTag(covata.covata_id, button);
+            }
+        });
+
+        card.appendChild(title);
+        card.appendChild(details);
+        card.appendChild(status);
+        card.appendChild(button);
+        covateList.appendChild(card);
+    });
+}
+
+async function assignTag(covataId, button) {
+    if (!confirm("Vuoi associare una nuova scheda NFC a questa covata?")) {
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Associazione in corso...";
+
+    const { data, error } = await client.rpc("assegna_tag_covata", {
+        p_covata_id: covataId,
+        p_tipo: "NFC"
+    });
+
+    button.disabled = false;
+    button.textContent = "Associa scheda NFC";
+
+    if (error) {
+        alert("Errore nell'associazione: " + error.message);
+        return;
+    }
+
+    if (!data || !data.successo || !data.codice) {
+        alert("Il sistema non ha restituito un codice NFC valido.");
+        return;
+    }
+
+    currentLink = data.collegamento || makeLink(data.codice);
+
+    resultMessage.textContent = "Scheda NFC associata correttamente alla covata.";
+    resultMessage.className = "status success";
+    generatedLink.textContent = currentLink;
+
+    resultPanel.classList.remove("hidden");
+    resultPanel.scrollIntoView({ behavior: "smooth" });
+
+    await loadCovate();
+}
+
+document.getElementById("copyButton").addEventListener("click", async () => {
+    if (!currentLink) return;
+
+    try {
+        await navigator.clipboard.writeText(currentLink);
+        alert("Collegamento copiato! Ora puoi incollarlo nell'app NFC.");
+    } catch (error) {
+        alert("Impossibile copiare automaticamente. Seleziona e copia il collegamento visualizzato.");
+    }
+});
+
+client.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_OUT") {
+        loginPanel.classList.remove("hidden");
+        appPanel.classList.add("hidden");
+        resultPanel.classList.add("hidden");
+    }
+});
+
+checkSession();
+</script>
+</body>
+</html>

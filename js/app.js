@@ -24,10 +24,22 @@ const stagioneAnno = document.getElementById("stagione-anno");
 const creaStagioneButton = document.getElementById("crea-stagione");
 const numeroStagioni = document.getElementById("numero-stagioni");
 
+const annoDashboard = document.getElementById("anno-dashboard");
+const statSoggetti = document.getElementById("stat-soggetti");
+const statUova = document.getElementById("stat-uova");
+const statPulli = document.getElementById("stat-pulli");
+const listaPromemoria = document.getElementById("lista-promemoria");
+
 let coppiaInModifica = null;
 let coppieArchivio = [];
+let stagioniArchivio = [];
+let annoSelezionato = new Date().getFullYear();
 
-stagioneAnno.value = new Date().getFullYear();
+stagioneAnno.value = annoSelezionato;
+
+// --------------------------------------------------
+// LOGIN E SESSIONE
+// --------------------------------------------------
 
 function mostraLogin() {
     loginArea.hidden = false;
@@ -37,36 +49,51 @@ function mostraLogin() {
 async function mostraUtente(user) {
     loginArea.hidden = true;
     appArea.hidden = false;
+
     userEmail.textContent = "Account: " + user.email;
 
-    await caricaStatistiche();
     await caricaCoppie();
     await caricaStagioni();
+    await caricaAnniDashboard();
+    await caricaDashboard();
 }
 
-async function caricaStatistiche() {
-    const statistiche = [
-        { tabella: "coppie", elemento: "stat-coppie" },
-        { tabella: "covate", elemento: "stat-covate" },
-        { tabella: "uova", elemento: "stat-uova" },
-        { tabella: "pulli", elemento: "stat-pulli" }
-    ];
+loginForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
 
-    for (const voce of statistiche) {
-        const elemento = document.getElementById(voce.elemento);
-        elemento.textContent = "...";
+    authMessage.textContent = "Accesso in corso...";
 
-        const { count, error } = await client
-            .from(voce.tabella)
-            .select("*", { count: "exact", head: true });
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
 
-        elemento.textContent = error ? "!" : count;
+    const { data, error } = await client.auth.signInWithPassword({
+        email,
+        password
+    });
 
-        if (error) {
-            console.error("Errore statistiche:", voce.tabella, error);
-        }
+    if (error) {
+        authMessage.textContent = "Errore di accesso: " + error.message;
+        return;
     }
-}
+
+    authMessage.textContent = "";
+    await mostraUtente(data.user);
+});
+
+logoutButton.addEventListener("click", async function() {
+    const { error } = await client.auth.signOut();
+
+    if (error) {
+        authMessage.textContent = "Errore durante l'uscita: " + error.message;
+        return;
+    }
+
+    mostraLogin();
+});
+
+// --------------------------------------------------
+// FUNZIONI GENERALI
+// --------------------------------------------------
 
 function creaElemento(tag, classe, testo) {
     const elemento = document.createElement(tag);
@@ -79,12 +106,313 @@ function creaElemento(tag, classe, testo) {
 
 function campoSoggetto(contenitore, etichetta, valore) {
     const riga = creaElemento("div", "bird-detail");
+
     riga.append(
         creaElemento("span", "", etichetta),
         creaElemento("strong", "", valore || "Non inserito")
     );
+
     contenitore.appendChild(riga);
 }
+
+function mostraErroreDashboard(messaggio) {
+    console.error(messaggio);
+
+    if (listaPromemoria) {
+        listaPromemoria.textContent = messaggio;
+    }
+}
+
+function formattaData(data) {
+    if (!data) return "";
+
+    const parti = data.split("-");
+    if (parti.length !== 3) return data;
+
+    return parti[2] + "/" + parti[1] + "/" + parti[0];
+}
+
+// --------------------------------------------------
+// DASHBOARD: ANNI DISPONIBILI
+// --------------------------------------------------
+
+async function caricaAnniDashboard() {
+    const { data, error } = await client
+        .from("anni_riproduttivi")
+        .select("anno")
+        .order("anno", { ascending: false });
+
+    if (error) {
+        console.error("Errore caricamento anni:", error);
+        annoDashboard.innerHTML = "";
+        const opzione = document.createElement("option");
+        opzione.value = String(new Date().getFullYear());
+        opzione.textContent = String(new Date().getFullYear());
+        annoDashboard.appendChild(opzione);
+        annoSelezionato = Number(opzione.value);
+        return;
+    }
+
+    const anni = [...new Set((data || []).map(item => item.anno))]
+        .filter(Number.isFinite)
+        .sort((a, b) => b - a);
+
+    const annoCorrente = new Date().getFullYear();
+
+    if (!anni.includes(annoCorrente) && anni.length === 0) {
+        anni.push(annoCorrente);
+    }
+
+    annoDashboard.replaceChildren();
+
+    anni.forEach(anno => {
+        const opzione = document.createElement("option");
+        opzione.value = String(anno);
+        opzione.textContent = String(anno);
+        annoDashboard.appendChild(opzione);
+    });
+
+    if (anni.includes(annoCorrente)) {
+        annoSelezionato = annoCorrente;
+    } else if (anni.length > 0) {
+        annoSelezionato = anni[0];
+    } else {
+        annoSelezionato = annoCorrente;
+    }
+
+    annoDashboard.value = String(annoSelezionato);
+}
+
+annoDashboard.addEventListener("change", async function() {
+    annoSelezionato = Number(annoDashboard.value);
+    await caricaDashboard();
+});
+
+// --------------------------------------------------
+// DASHBOARD: CONTATORI
+// --------------------------------------------------
+
+async function caricaDashboard() {
+    statSoggetti.textContent = "...";
+    statUova.textContent = "...";
+    statPulli.textContent = "...";
+
+    await caricaNumeroSoggetti();
+    await caricaStatisticheStagione();
+    await caricaPromemoria();
+}
+
+async function caricaNumeroSoggetti() {
+    const { data, error } = await client
+        .from("coppie")
+        .select("maschio_anello, femmina_anello");
+
+    if (error) {
+        statSoggetti.textContent = "!";
+        console.error("Errore conteggio soggetti:", error);
+        return;
+    }
+
+    const anelli = new Set();
+
+    (data || []).forEach(coppia => {
+        const maschio = (coppia.maschio_anello || "").trim();
+        const femmina = (coppia.femmina_anello || "").trim();
+
+        if (maschio) anelli.add(maschio.toLowerCase());
+        if (femmina) anelli.add(femmina.toLowerCase());
+    });
+
+    statSoggetti.textContent = anelli.size;
+}
+
+async function caricaStatisticheStagione() {
+    const { data: stagioni, error: erroreStagioni } = await client
+        .from("anni_riproduttivi")
+        .select("id")
+        .eq("anno", annoSelezionato);
+
+    if (erroreStagioni) {
+        statUova.textContent = "!";
+        statPulli.textContent = "!";
+        console.error("Errore stagioni statistiche:", erroreStagioni);
+        return;
+    }
+
+    const idsStagioni = (stagioni || []).map(item => item.id);
+
+    if (idsStagioni.length === 0) {
+        statUova.textContent = "0";
+        statPulli.textContent = "0";
+        return;
+    }
+
+    const { data: covate, error: erroreCovate } = await client
+        .from("covate")
+        .select("id")
+        .in("anno_id", idsStagioni);
+
+    if (erroreCovate) {
+        statUova.textContent = "!";
+        statPulli.textContent = "!";
+        console.error("Errore covate statistiche:", erroreCovate);
+        return;
+    }
+
+    const idsCovate = (covate || []).map(item => item.id);
+
+    if (idsCovate.length === 0) {
+        statUova.textContent = "0";
+        statPulli.textContent = "0";
+        return;
+    }
+
+    const { count: conteggioUova, error: erroreUova } = await client
+        .from("uova")
+        .select("*", { count: "exact", head: true })
+        .in("covata_id", idsCovate);
+
+    const { count: conteggioPulli, error: errorePulli } = await client
+        .from("pulli")
+        .select("*", { count: "exact", head: true })
+        .in("covata_id", idsCovate);
+
+    statUova.textContent = erroreUova ? "!" : (conteggioUova ?? 0);
+    statPulli.textContent = errorePulli ? "!" : (conteggioPulli ?? 0);
+
+    if (erroreUova) console.error("Errore conteggio uova:", erroreUova);
+    if (errorePulli) console.error("Errore conteggio pulli:", errorePulli);
+}
+
+// --------------------------------------------------
+// DASHBOARD: PROMEMORIA
+// --------------------------------------------------
+
+async function caricaPromemoria() {
+    listaPromemoria.replaceChildren();
+
+    const { data: stagioni, error: erroreStagioni } = await client
+        .from("anni_riproduttivi")
+        .select("id")
+        .eq("anno", annoSelezionato);
+
+    if (erroreStagioni) {
+        mostraErroreDashboard("Impossibile caricare i promemoria.");
+        return;
+    }
+
+    const idsStagioni = (stagioni || []).map(item => item.id);
+
+    if (idsStagioni.length === 0) {
+        listaPromemoria.appendChild(
+            creaElemento("p", "empty-state", "Nessun promemoria per questa stagione.")
+        );
+        return;
+    }
+
+    const { data: covate, error: erroreCovate } = await client
+        .from("covate")
+        .select("id, numero, data_speratura_prevista, data_schiusa_prevista")
+        .in("anno_id", idsStagioni);
+
+    if (erroreCovate) {
+        mostraErroreDashboard("Errore nel caricamento delle covate.");
+        return;
+    }
+
+    const archivioCovate = covate || [];
+    const idsCovate = archivioCovate.map(item => item.id);
+
+    const promemoria = [];
+    const oggi = new Date();
+    oggi.setHours(0, 0, 0, 0);
+
+    archivioCovate.forEach(covata => {
+        if (covata.data_speratura_prevista) {
+            promemoria.push({
+                tipo: "Speratura",
+                data: covata.data_speratura_prevista,
+                testo: "Speratura della covata " + covata.numero
+            });
+        }
+
+        if (covata.data_schiusa_prevista) {
+            promemoria.push({
+                tipo: "Schiusa",
+                data: covata.data_schiusa_prevista,
+                testo: "Controllo schiusa della covata " + covata.numero
+            });
+        }
+    });
+
+    if (idsCovate.length > 0) {
+        const { data: pulli, error: errorePulli } = await client
+            .from("pulli")
+            .select("id, anello, data_nascita, data_inanellamento, covata_id")
+            .in("covata_id", idsCovate);
+
+        if (errorePulli) {
+            console.error("Errore promemoria inanellamento:", errorePulli);
+        } else {
+            (pulli || []).forEach(pullo => {
+                if (!pullo.data_inanellamento && pullo.data_nascita) {
+                    promemoria.push({
+                        tipo: "Inanellamento",
+                        data: pullo.data_nascita,
+                        testo: "Inanellamento da registrare" +
+                            (pullo.anello ? " - " + pullo.anello : "")
+                    });
+                }
+            });
+        }
+    }
+
+    promemoria.sort((a, b) => a.data.localeCompare(b.data));
+
+    const promemoriaVisibili = promemoria.filter(item => {
+        const dataItem = new Date(item.data + "T00:00:00");
+        return !Number.isNaN(dataItem.getTime());
+    });
+
+    if (promemoriaVisibili.length === 0) {
+        listaPromemoria.appendChild(
+            creaElemento("p", "empty-state", "Nessun promemoria registrato per questa stagione.")
+        );
+        return;
+    }
+
+    promemoriaVisibili.forEach(item => {
+        const dataItem = new Date(item.data + "T00:00:00");
+        const scaduto = dataItem < oggi;
+        const oggiStesso = dataItem.getTime() === oggi.getTime();
+
+        const card = creaElemento("article", "reminder-card");
+
+        if (scaduto) card.classList.add("reminder-overdue");
+        if (oggiStesso) card.classList.add("reminder-today");
+
+        const contenuto = creaElemento("div", "reminder-content");
+        contenuto.append(
+            creaElemento("strong", "", item.testo),
+            creaElemento("small", "", item.tipo)
+        );
+
+        const data = creaElemento("span", "reminder-date", formattaData(item.data));
+
+        if (scaduto) {
+            data.textContent += " · Da verificare";
+        } else if (oggiStesso) {
+            data.textContent += " · Oggi";
+        }
+
+        card.append(contenuto, data);
+        listaPromemoria.appendChild(card);
+    });
+}
+
+// --------------------------------------------------
+// GESTIONE COPPIE
+// --------------------------------------------------
 
 async function caricaCoppie() {
     listaCoppie.textContent = "Caricamento coppie...";
@@ -199,6 +527,7 @@ function modificaCoppia(coppia) {
 function resetFormCoppia() {
     coppiaInModifica = null;
     coppiaForm.reset();
+
     titoloFormCoppia.textContent = "Registra una nuova coppia";
     salvaCoppiaButton.textContent = "Salva coppia";
     annullaModificaButton.hidden = true;
@@ -238,7 +567,7 @@ async function eliminaCoppia(coppia) {
     if (coppiaInModifica === coppia.id) resetFormCoppia();
 
     await caricaCoppie();
-    await caricaStatistiche();
+    await caricaDashboard();
 }
 
 coppiaForm.addEventListener("submit", async function(event) {
@@ -316,7 +645,7 @@ coppiaForm.addEventListener("submit", async function(event) {
 
         resetFormCoppia();
         await caricaCoppie();
-        await caricaStatistiche();
+        await caricaDashboard();
 
     } catch (error) {
         coppiaMessage.textContent = "Errore: " + error.message;
@@ -325,6 +654,10 @@ coppiaForm.addEventListener("submit", async function(event) {
         salvaCoppiaButton.disabled = false;
     }
 });
+
+// --------------------------------------------------
+// GESTIONE STAGIONI
+// --------------------------------------------------
 
 async function caricaStagioni() {
     listaStagioni.textContent = "Caricamento stagioni...";
@@ -345,27 +678,30 @@ async function caricaStagioni() {
         .select("id, anno_id, numero");
 
     if (covateError) {
-        listaStagioni.textContent = "Errore nel caricamento delle covate: " + covateError.message;
+        listaStagioni.textContent =
+            "Errore nel caricamento delle covate: " + covateError.message;
         console.error(covateError);
         return;
     }
 
-    const archivio = stagioni || [];
+    stagioniArchivio = stagioni || [];
+
     const archivioCovate = covate || [];
 
     numeroStagioni.textContent =
-        archivio.length + (archivio.length === 1 ? " stagione" : " stagioni");
+        stagioniArchivio.length +
+        (stagioniArchivio.length === 1 ? " stagione" : " stagioni");
 
     listaStagioni.replaceChildren();
 
-    if (archivio.length === 0) {
+    if (stagioniArchivio.length === 0) {
         listaStagioni.appendChild(
             creaElemento("p", "empty-state", "Non hai ancora creato stagioni riproduttive.")
         );
         return;
     }
 
-    archivio.forEach(stagione => {
+    stagioniArchivio.forEach(stagione => {
         const coppia = coppieArchivio.find(item => item.id === stagione.coppia_id);
         const nomeCoppia = coppia ? coppia.codice : "Coppia non disponibile";
 
@@ -382,12 +718,14 @@ async function caricaStagioni() {
         );
 
         const dettagli = creaElemento("div", "bird-detail");
+
         dettagli.append(
             creaElemento("span", "", "Stagione riproduttiva"),
             creaElemento("strong", "", String(stagione.anno))
         );
 
         const riepilogo = creaElemento("div", "bird-detail");
+
         riepilogo.append(
             creaElemento("span", "", "Covate associate"),
             creaElemento("strong", "", String(covateStagione.length))
@@ -415,7 +753,8 @@ stagioneForm.addEventListener("submit", async function(event) {
     const anno = Number.parseInt(stagioneAnno.value, 10);
 
     if (!coppiaId || !Number.isInteger(anno) || anno < 2000 || anno > 2100) {
-        stagioneMessage.textContent = "Seleziona una coppia e inserisci un anno valido.";
+        stagioneMessage.textContent =
+            "Seleziona una coppia e inserisci un anno valido.";
         return;
     }
 
@@ -436,16 +775,24 @@ stagioneForm.addEventListener("submit", async function(event) {
 
         if (error) {
             if (error.code === "23505") {
-                throw new Error("Questa coppia ha già una stagione registrata per il " + anno + ".");
+                throw new Error(
+                    "Questa coppia ha già una stagione registrata per il " + anno + "."
+                );
             }
+
             throw error;
         }
 
         stagioneMessage.textContent =
-            "Stagione " + anno + " creata correttamente. Le prime tre covate sono state generate.";
+            "Stagione " + anno + " creata correttamente.";
 
         await caricaStagioni();
-        await caricaStatistiche();
+        await caricaAnniDashboard();
+
+        annoDashboard.value = String(anno);
+        annoSelezionato = anno;
+
+        await caricaDashboard();
 
     } catch (error) {
         stagioneMessage.textContent = "Errore: " + error.message;
@@ -455,42 +802,14 @@ stagioneForm.addEventListener("submit", async function(event) {
     }
 });
 
-loginForm.addEventListener("submit", async function(event) {
-    event.preventDefault();
-
-    authMessage.textContent = "Accesso in corso...";
-
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-
-    const { data, error } = await client.auth.signInWithPassword({
-        email,
-        password
-    });
-
-    if (error) {
-        authMessage.textContent = "Errore di accesso: " + error.message;
-        return;
-    }
-
-    authMessage.textContent = "";
-    await mostraUtente(data.user);
-});
-
-logoutButton.addEventListener("click", async function() {
-    const { error } = await client.auth.signOut();
-
-    if (error) {
-        authMessage.textContent = "Errore durante l'uscita: " + error.message;
-        return;
-    }
-
-    mostraLogin();
-});
+// --------------------------------------------------
+// AVVIO APPLICAZIONE
+// --------------------------------------------------
 
 async function inizializzaApplicazione() {
     if (!client) {
-        authMessage.textContent = "Errore: collegamento Supabase non disponibile.";
+        authMessage.textContent =
+            "Errore: collegamento Supabase non disponibile.";
         return;
     }
 

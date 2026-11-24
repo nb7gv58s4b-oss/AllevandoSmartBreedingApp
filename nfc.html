@@ -15,10 +15,12 @@
             font-family: Arial, sans-serif;
             color: #202938;
         }
+
         .container {
             max-width: 850px;
             margin: 25px auto;
         }
+
         .panel {
             background: white;
             padding: 24px;
@@ -26,8 +28,10 @@
             margin-bottom: 20px;
             box-shadow: 0 3px 15px rgba(0,0,0,.06);
         }
+
         h1 { margin-top: 0; color: #173d32; }
         h2 { font-size: 19px; }
+
         input {
             width: 100%;
             box-sizing: border-box;
@@ -37,6 +41,7 @@
             border-radius: 8px;
             font-size: 16px;
         }
+
         button {
             border: 0;
             border-radius: 8px;
@@ -47,14 +52,24 @@
             background: #176b50;
             color: white;
         }
-        button:disabled { opacity: .5; cursor: not-allowed; }
-        .secondary { background: #e8edf0; color: #263442; }
+
+        button:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        .secondary {
+            background: #e8edf0;
+            color: #263442;
+        }
+
         .card {
             border: 1px solid #e0e6e9;
             border-radius: 10px;
             padding: 16px;
             margin-top: 12px;
         }
+
         .status {
             padding: 12px;
             border-radius: 8px;
@@ -62,10 +77,26 @@
             background: #eef3f5;
             overflow-wrap: anywhere;
         }
-        .success { background: #e5f5eb; color: #176b36; }
-        .error { background: #fdeaea; color: #a32626; }
-        .muted { color: #687582; font-size: 14px; }
-        .hidden { display: none; }
+
+        .success {
+            background: #e5f5eb;
+            color: #176b36;
+        }
+
+        .error {
+            background: #fdeaea;
+            color: #a32626;
+        }
+
+        .muted {
+            color: #687582;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
         .link {
             display: block;
             overflow-wrap: anywhere;
@@ -75,6 +106,7 @@
             margin: 10px 0;
             font-size: 13px;
         }
+
         .actions {
             display: flex;
             flex-wrap: wrap;
@@ -85,69 +117,104 @@
 </head>
 
 <body>
+
 <div class="container">
 
     <div class="panel">
         <h1>ALLEVANDO Smart Breeding™</h1>
-        <h2>Programmazione schede NFC</h2>
+        <h2>Programmazione Smart Card NFC</h2>
+
         <p class="muted">
-            Associa una scheda NFC a una covata e genera il collegamento
-            da scrivere fisicamente sulla scheda.
+            Gestione e assegnazione delle Smart Card NFC
+            permanenti alle coppie.
         </p>
     </div>
 
     <div class="panel" id="loginPanel">
-        <h2>Accesso allevatore</h2>
+        <h2>Accesso amministratore</h2>
+
         <form id="loginForm">
             <label>Email</label>
             <input type="email" id="email" required>
+
             <label>Password</label>
             <input type="password" id="password" required>
-            <button type="submit" id="loginButton">Accedi</button>
+
+            <button type="submit" id="loginButton">
+                Accedi
+            </button>
         </form>
+
         <div id="loginMessage" class="status hidden"></div>
     </div>
 
     <div id="appPanel" class="hidden">
+
         <div class="panel">
+
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-                <h2>Le tue covate</h2>
-                <button class="secondary" id="logoutButton">Esci</button>
+
+                <h2>Coppie registrate</h2>
+
+                <button class="secondary" id="logoutButton">
+                    Esci
+                </button>
+
             </div>
 
             <p class="muted">
-                Seleziona la covata alla quale vuoi associare una scheda.
+                Ogni coppia può avere una sola Smart Card permanente.
+                Seleziona una coppia per assegnare o visualizzare
+                il suo collegamento NFC.
             </p>
 
-            <button id="refreshButton" class="secondary">Aggiorna elenco</button>
+            <button id="refreshButton" class="secondary">
+                Aggiorna elenco
+            </button>
+
             <div id="listMessage" class="status hidden"></div>
-            <div id="covateList"></div>
+
+            <div id="coppieList"></div>
+
         </div>
 
         <div class="panel hidden" id="resultPanel">
-            <h2>Collegamento della scheda NFC</h2>
+
+            <h2>Collegamento Smart Card NFC</h2>
+
             <div id="resultMessage" class="status success"></div>
-            <p>Questo è il collegamento da scrivere nella scheda NFC:</p>
+
+            <p>
+                Questo è il collegamento permanente della coppia:
+            </p>
+
             <div class="link" id="generatedLink"></div>
 
             <div class="actions">
-                <button id="copyButton">Copia collegamento</button>
+                <button id="copyButton">
+                    Copia collegamento
+                </button>
             </div>
 
-            <h2>Come programmare la scheda</h2>
+            <h2>Programmazione della card</h2>
+
             <ol>
-                <li>Apri un'app di scrittura NFC sul telefono, ad esempio NFC Tools.</li>
-                <li>Scegli la funzione per scrivere un URL o un indirizzo web.</li>
-                <li>Incolla il collegamento copiato qui sopra.</li>
-                <li>Avvicina la scheda NFC al telefono e completa la scrittura.</li>
-                <li>Scansiona la scheda per verificare che si apra la covata corretta.</li>
+                <li>Apri un'app di scrittura NFC, ad esempio NFC Tools.</li>
+                <li>Seleziona la funzione per scrivere un URL.</li>
+                <li>Incolla il collegamento copiato.</li>
+                <li>Avvicina la Smart Card al telefono.</li>
+                <li>Completa la scrittura e verifica la scansione.</li>
             </ol>
 
             <p class="muted">
-                Il collegamento identifica in modo univoco questa covata.
+                La card rimane associata alla stessa coppia
+                anche nelle successive stagioni riproduttive.
             </p>
+
         </div>
+
     </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -155,13 +222,17 @@
 <script src="js/supabase.js"></script>
 
 <script>
+
 const client = window.supabaseClient;
 
 const loginPanel = document.getElementById("loginPanel");
 const appPanel = document.getElementById("appPanel");
+
 const loginMessage = document.getElementById("loginMessage");
 const listMessage = document.getElementById("listMessage");
-const covateList = document.getElementById("covateList");
+
+const coppieList = document.getElementById("coppieList");
+
 const resultPanel = document.getElementById("resultPanel");
 const resultMessage = document.getElementById("resultMessage");
 const generatedLink = document.getElementById("generatedLink");
@@ -180,7 +251,7 @@ function hideMessage(element) {
 
 function makeLink(code) {
     return new URL(
-        "covata.html?tag=" + encodeURIComponent(code),
+        "coppia.html?tag=" + encodeURIComponent(code),
         window.location.href
     ).href;
 }
@@ -189,7 +260,8 @@ async function showApp() {
     loginPanel.classList.add("hidden");
     appPanel.classList.remove("hidden");
     resultPanel.classList.add("hidden");
-    await loadCovate();
+
+    await loadCoppie();
 }
 
 async function checkSession() {
@@ -209,11 +281,14 @@ async function checkSession() {
 }
 
 document.getElementById("loginForm").addEventListener("submit", async event => {
+
     event.preventDefault();
 
     const button = document.getElementById("loginButton");
+
     button.disabled = true;
     button.textContent = "Accesso in corso...";
+
     hideMessage(loginMessage);
 
     const email = document.getElementById("email").value.trim();
@@ -228,144 +303,247 @@ document.getElementById("loginForm").addEventListener("submit", async event => {
     button.textContent = "Accedi";
 
     if (error) {
-        showMessage(loginMessage, "Accesso non riuscito: " + error.message, "error");
+        showMessage(
+            loginMessage,
+            "Accesso non riuscito: " + error.message,
+            "error"
+        );
         return;
     }
 
     await showApp();
+
 });
 
 document.getElementById("logoutButton").addEventListener("click", async () => {
+
     await client.auth.signOut();
+
     resultPanel.classList.add("hidden");
     appPanel.classList.add("hidden");
     loginPanel.classList.remove("hidden");
+
 });
 
-document.getElementById("refreshButton").addEventListener("click", loadCovate);
+document.getElementById("refreshButton").addEventListener("click", loadCoppie);
 
-async function loadCovate() {
-    covateList.innerHTML = "";
+async function loadCoppie() {
+
+    coppieList.innerHTML = "";
+
     hideMessage(listMessage);
-    showMessage(listMessage, "Caricamento covate...");
 
-    const { data, error } = await client.rpc("lista_covate_per_tag");
+    showMessage(listMessage, "Caricamento coppie...");
+
+    const { data, error } = await client.rpc("lista_coppie_per_tag");
 
     if (error) {
-        showMessage(listMessage, "Errore nel caricamento delle covate: " + error.message, "error");
+
+        showMessage(
+            listMessage,
+            "Errore nel caricamento delle coppie: " + error.message,
+            "error"
+        );
+
+        return;
+    }
+
+    if (!data || !data.successo || !Array.isArray(data.coppie)) {
+
+        showMessage(
+            listMessage,
+            "Il sistema non ha restituito un elenco valido.",
+            "error"
+        );
+
         return;
     }
 
     hideMessage(listMessage);
 
-    if (!Array.isArray(data) || data.length === 0) {
-        showMessage(listMessage, "Non risultano covate disponibili. Registra prima il primo uovo per una coppia.");
+    if (data.coppie.length === 0) {
+
+        showMessage(
+            listMessage,
+            "Non risultano coppie registrate."
+        );
+
         return;
     }
 
-    data.forEach(covata => {
+    data.coppie.forEach(coppia => {
+
         const card = document.createElement("div");
         card.className = "card";
 
         const title = document.createElement("h2");
-        title.textContent =
-            "Coppia " + (covata.coppia || "—") +
-            " · Anno " + (covata.anno || "—") +
-            " · Covata " + covata.numero;
 
-        const details = document.createElement("p");
-        details.className = "muted";
-        details.textContent = "Gabbia: " + (covata.gabbia || "Non indicata");
+        title.textContent = "Coppia " + (coppia.codice || "—");
+
+        const male = document.createElement("p");
+        male.className = "muted";
+
+        male.textContent =
+            "Maschio: " +
+            (coppia.maschio_anello || "Non indicato") +
+            " · " +
+            (coppia.maschio_mutazione || "—");
+
+        const female = document.createElement("p");
+        female.className = "muted";
+
+        female.textContent =
+            "Femmina: " +
+            (coppia.femmina_anello || "Non indicata") +
+            " · " +
+            (coppia.femmina_mutazione || "—");
 
         const status = document.createElement("p");
-        status.textContent = covata.tag_attivo
-            ? "Scheda NFC già associata"
-            : "Nessuna scheda NFC associata";
+
+        status.textContent = coppia.tag_attivo
+            ? "Smart Card NFC già associata"
+            : "Nessuna Smart Card associata";
 
         const button = document.createElement("button");
-        button.textContent = covata.tag_attivo
+
+        button.textContent = coppia.tag_attivo
             ? "Visualizza collegamento"
-            : "Associa scheda NFC";
+            : "Assegna Smart Card NFC";
 
         button.addEventListener("click", () => {
-            if (covata.tag_attivo && covata.codice_tag) {
-                currentLink = makeLink(covata.codice_tag);
-                resultMessage.textContent = "Questa covata ha già una scheda NFC attiva.";
+
+            if (coppia.tag_attivo && coppia.codice_tag) {
+
+                currentLink = makeLink(coppia.codice_tag);
+
+                resultMessage.textContent =
+                    "Questa coppia ha già una Smart Card NFC attiva.";
+
                 resultMessage.className = "status success";
+
                 generatedLink.textContent = currentLink;
+
                 resultPanel.classList.remove("hidden");
-                resultPanel.scrollIntoView({ behavior: "smooth" });
+
+                resultPanel.scrollIntoView({
+                    behavior: "smooth"
+                });
+
             } else {
-                assignTag(covata.covata_id, button);
+
+                assignTag(coppia.id, button);
+
             }
+
         });
 
         card.appendChild(title);
-        card.appendChild(details);
+        card.appendChild(male);
+        card.appendChild(female);
         card.appendChild(status);
         card.appendChild(button);
-        covateList.appendChild(card);
+
+        coppieList.appendChild(card);
+
     });
+
+    showMessage(
+        listMessage,
+        "Coppie caricate: " + data.coppie.length,
+        "success"
+    );
+
 }
 
-async function assignTag(covataId, button) {
-    if (!confirm("Vuoi associare una nuova scheda NFC a questa covata?")) {
+async function assignTag(coppiaId, button) {
+
+    if (!confirm(
+        "Vuoi assegnare una Smart Card NFC permanente a questa coppia?"
+    )) {
         return;
     }
 
     button.disabled = true;
     button.textContent = "Associazione in corso...";
 
-    const { data, error } = await client.rpc("assegna_tag_covata", {
-        p_covata_id: covataId,
+    const { data, error } = await client.rpc("assegna_tag_coppia", {
+        p_coppia_id: coppiaId,
         p_tipo: "NFC"
     });
 
     button.disabled = false;
-    button.textContent = "Associa scheda NFC";
+    button.textContent = "Assegna Smart Card NFC";
 
     if (error) {
+
         alert("Errore nell'associazione: " + error.message);
+
         return;
     }
 
     if (!data || !data.successo || !data.codice) {
+
         alert("Il sistema non ha restituito un codice NFC valido.");
+
         return;
     }
 
     currentLink = data.collegamento || makeLink(data.codice);
 
-    resultMessage.textContent = "Scheda NFC associata correttamente alla covata.";
+    resultMessage.textContent =
+        "Smart Card NFC associata correttamente alla coppia.";
+
     resultMessage.className = "status success";
+
     generatedLink.textContent = currentLink;
 
     resultPanel.classList.remove("hidden");
-    resultPanel.scrollIntoView({ behavior: "smooth" });
 
-    await loadCovate();
+    resultPanel.scrollIntoView({
+        behavior: "smooth"
+    });
+
+    await loadCoppie();
+
 }
 
 document.getElementById("copyButton").addEventListener("click", async () => {
+
     if (!currentLink) return;
 
     try {
+
         await navigator.clipboard.writeText(currentLink);
-        alert("Collegamento copiato! Ora puoi incollarlo nell'app NFC.");
+
+        alert(
+            "Collegamento copiato! Puoi ora programmarlo sulla Smart Card."
+        );
+
     } catch (error) {
-        alert("Impossibile copiare automaticamente. Seleziona e copia il collegamento visualizzato.");
+
+        alert(
+            "Impossibile copiare automaticamente. Seleziona e copia il collegamento visualizzato."
+        );
+
     }
+
 });
 
-client.auth.onAuthStateChange((event) => {
+client.auth.onAuthStateChange(event => {
+
     if (event === "SIGNED_OUT") {
+
         loginPanel.classList.remove("hidden");
         appPanel.classList.add("hidden");
         resultPanel.classList.add("hidden");
+
     }
+
 });
 
 checkSession();
+
 </script>
+
 </body>
 </html>

@@ -112,14 +112,12 @@ async function caricaCoppie() {
         const soggetti = creaElemento("div", "birds-grid");
 
         const maschio = creaElemento("div", "bird-card male-card");
-        const titoloMaschio = creaElemento("h4", "", "♂ Maschio");
-        maschio.appendChild(titoloMaschio);
+        maschio.appendChild(creaElemento("h4", "", "♂ Maschio"));
         campoSoggetto(maschio, "Anello", coppia.maschio_anello);
         campoSoggetto(maschio, "Mutazione", coppia.maschio_mutazione);
 
         const femmina = creaElemento("div", "bird-card female-card");
-        const titoloFemmina = creaElemento("h4", "", "♀ Femmina");
-        femmina.appendChild(titoloFemmina);
+        femmina.appendChild(creaElemento("h4", "", "♀ Femmina"));
         campoSoggetto(femmina, "Anello", coppia.femmina_anello);
         campoSoggetto(femmina, "Mutazione", coppia.femmina_mutazione);
 
@@ -226,7 +224,7 @@ coppiaForm.addEventListener("submit", async function(event) {
     }
 
     salvaCoppiaButton.disabled = true;
-    coppiaMessage.textContent = "Salvataggio in corso...";
+    coppiaMessage.textContent = "Verifica e salvataggio in corso...";
 
     try {
         const { data: userData, error: userError } = await client.auth.getUser();
@@ -235,34 +233,57 @@ coppiaForm.addEventListener("submit", async function(event) {
             throw new Error("Sessione non valida. Accedi nuovamente.");
         }
 
-        let risultato;
+        const userId = userData.user.id;
+        let coppiaEsistente = null;
 
         if (coppiaInModifica) {
-            risultato = await client
+            const { data, error } = await client
+                .from("coppie")
+                .select("id")
+                .eq("id", coppiaInModifica)
+                .eq("user_id", userId)
+                .maybeSingle();
+
+            if (error) throw error;
+            coppiaEsistente = data;
+        } else {
+            const { data, error } = await client
+                .from("coppie")
+                .select("id")
+                .eq("codice", dati.codice)
+                .eq("user_id", userId)
+                .maybeSingle();
+
+            if (error) throw error;
+            coppiaEsistente = data;
+        }
+
+        if (coppiaEsistente) {
+            const { error } = await client
                 .from("coppie")
                 .update(dati)
-                .eq("id", coppiaInModifica)
-                .eq("user_id", userData.user.id);
+                .eq("id", coppiaEsistente.id)
+                .eq("user_id", userId);
+
+            if (error) throw error;
+
+            coppiaMessage.textContent =
+                "Coppia " + dati.codice + " aggiornata correttamente.";
         } else {
-            risultato = await client
+            const { error } = await client
                 .from("coppie")
                 .insert({
                     ...dati,
-                    user_id: userData.user.id
+                    user_id: userId
                 });
-        }
 
-        if (risultato.error) {
-            throw risultato.error;
-        }
+            if (error) throw error;
 
-        const eraModifica = Boolean(coppiaInModifica);
+            coppiaMessage.textContent =
+                "Coppia " + dati.codice + " registrata correttamente.";
+        }
 
         resetFormCoppia();
-
-        coppiaMessage.textContent = eraModifica
-            ? "Coppia aggiornata correttamente."
-            : "Coppia registrata correttamente.";
 
         await caricaCoppie();
         await caricaStatistiche();

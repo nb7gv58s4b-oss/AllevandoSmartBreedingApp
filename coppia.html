@@ -1,0 +1,434 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ALLEVANDO - Gestione coppia</title>
+<link rel="stylesheet" href="./css/style.css">
+<style>
+body{margin:0;background:#f3f5f2;font-family:Arial,sans-serif;color:#26352c}
+.page{max-width:950px;margin:auto;padding:16px}
+.panel{background:white;border-radius:14px;padding:20px;margin:15px 0;box-shadow:0 2px 10px #0000000d}
+h1,h2,h3{color:#285b3d}
+input,textarea,select{box-sizing:border-box;width:100%;padding:12px;margin:6px 0 14px;border:1px solid #ccd5ce;border-radius:8px;font-size:16px}
+label{font-weight:600;font-size:14px}
+button{background:#285b3d;color:white;border:0;border-radius:8px;padding:13px 18px;font-size:15px;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.5}
+.secondary{background:#64756a}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.muted{color:#68776d;font-size:14px}
+.error{color:#b42318}
+.success{color:#168044}
+.hidden{display:none!important}
+.item{padding:14px;border-bottom:1px solid #e5eae6}
+.item:last-child{border-bottom:0}
+.seasonHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.covataCard{border:1px solid #e0e8e2;border-radius:10px;padding:15px;margin:12px 0}
+.covataCard h3{margin-top:0}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.small{font-size:13px}
+@media(max-width:550px){.grid{grid-template-columns:1fr}.page{padding:10px}.panel{padding:15px}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="panel">
+<h1>ALLEVANDO Smart Breeding™</h1>
+<p class="muted">Gestione digitale della coppia</p>
+<button type="button" class="secondary" onclick="location.href='./index.html'">Torna alla dashboard</button>
+</header>
+
+<section id="login" class="panel hidden">
+<h2>Accedi al tuo allevamento</h2>
+<p class="muted">Accedi con il tuo account per aprire la scheda della coppia.</p>
+<form id="loginForm">
+<label>Email</label>
+<input id="email" type="email" required autocomplete="username">
+<label>Password</label>
+<input id="password" type="password" required autocomplete="current-password">
+<button type="submit">Accedi</button>
+</form>
+<p id="loginMessage" class="error"></p>
+</section>
+
+<section id="main" class="hidden">
+
+<div class="panel">
+<h2 id="pairTitle">Coppia</h2>
+<p id="pairCode" class="muted"></p>
+<p class="muted">Questa scheda NFC è associata stabilmente a questa coppia.</p>
+</div>
+
+<div class="panel">
+<div class="seasonHeader">
+<h2>Stagione riproduttiva</h2>
+<select id="seasonSelect" style="width:auto;min-width:130px"></select>
+</div>
+<p id="seasonMessage" class="muted"></p>
+</div>
+
+<div class="panel">
+<h2>Riproduttori della stagione</h2>
+<p class="muted">Puoi cambiare maschio e femmina per questa stagione. Le stagioni precedenti non verranno modificate.</p>
+
+<form id="breedersForm">
+<h3>Maschio</h3>
+<div class="grid">
+<div>
+<label>Anello maschio</label>
+<input id="maschio_anello">
+</div>
+<div>
+<label>Mutazione maschio</label>
+<input id="maschio_mutazione">
+</div>
+</div>
+
+<h3>Femmina</h3>
+<div class="grid">
+<div>
+<label>Anello femmina</label>
+<input id="femmina_anello">
+</div>
+<div>
+<label>Mutazione femmina</label>
+<input id="femmina_mutazione">
+</div>
+</div>
+
+<button id="breedersButton" type="submit">Salva riproduttori</button>
+<p id="breedersMessage"></p>
+</form>
+</div>
+
+<div class="panel">
+<h2>Nuova covata</h2>
+<form id="newCovataForm">
+<div class="grid">
+<div>
+<label>Numero covata</label>
+<input id="newNumero" type="number" min="1" required>
+</div>
+<div>
+<label>Gabbia</label>
+<input id="newGabbia">
+</div>
+<div>
+<label>Data deposizione</label>
+<input id="newData" type="date">
+</div>
+</div>
+<button id="newCovataButton" type="submit">Crea covata</button>
+<p id="newCovataMessage"></p>
+</form>
+</div>
+
+<div class="panel">
+<h2>Covate della stagione</h2>
+<div id="covateList" class="muted">Nessuna covata registrata.</div>
+</div>
+
+</section>
+
+<section id="loading" class="panel">
+<p>Caricamento della scheda...</p>
+</section>
+
+<p id="globalMessage" class="error"></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./js/config.js"></script>
+<script src="./js/supabase.js"></script>
+
+<script>
+(async function(){
+
+const client=window.supabaseClient;
+const params=new URLSearchParams(location.search);
+const codiceTag=params.get("tag");
+const $=id=>document.getElementById(id);
+
+let coppia=null;
+let stagioni=[];
+let stagioneSelezionata=null;
+
+function message(id,text,cls=""){
+$(id).textContent=text;
+$(id).className=cls;
+}
+
+function show(id){$(id).classList.remove("hidden")}
+function hide(id){$(id).classList.add("hidden")}
+
+function valore(v){return v===null||v===undefined?"":v}
+
+function dataIt(v){
+if(!v)return "Non indicata";
+const p=v.split("-");
+return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:v;
+}
+
+function renderCovate(){
+
+const area=$("covateList");
+area.replaceChildren();
+
+if(!stagioneSelezionata||!stagioneSelezionata.covate||!stagioneSelezionata.covate.length){
+area.textContent="Nessuna covata registrata per questa stagione.";
+return;
+}
+
+stagioneSelezionata.covate.forEach(c=>{
+
+const card=document.createElement("div");
+card.className="covataCard";
+
+const title=document.createElement("h3");
+title.textContent="Covata n. "+c.numero;
+card.appendChild(title);
+
+const info=document.createElement("p");
+info.className="muted";
+info.textContent=
+"Gabbia: "+(c.gabbia||"Non indicata")+
+" · Deposizione: "+dataIt(c.data_deposizione)+
+" · Stato: "+(c.stato||"Da definire");
+card.appendChild(info);
+
+const eggs=document.createElement("p");
+eggs.textContent="Uova: "+(c.uova?.length||0);
+card.appendChild(eggs);
+
+const chicks=document.createElement("p");
+chicks.textContent="Pulli: "+(c.pulli?.length||0);
+card.appendChild(chicks);
+
+const button=document.createElement("button");
+button.type="button";
+button.textContent="Apri covata";
+button.addEventListener("click",()=>{
+location.href="./covata.html?tag="+encodeURIComponent(codiceTag)+"&covata="+encodeURIComponent(c.id);
+});
+card.appendChild(button);
+
+area.appendChild(card);
+
+});
+}
+
+function renderSeason(){
+
+stagioneSelezionata=stagioni.find(s=>s.id===$("seasonSelect").value)||null;
+
+if(!stagioneSelezionata)return;
+
+$("seasonMessage").textContent="Stagione riproduttiva "+stagioneSelezionata.anno;
+
+$("maschio_anello").value=valore(stagioneSelezionata.maschio_anello);
+$("maschio_mutazione").value=valore(stagioneSelezionata.maschio_mutazione);
+$("femmina_anello").value=valore(stagioneSelezionata.femmina_anello);
+$("femmina_mutazione").value=valore(stagioneSelezionata.femmina_mutazione);
+
+message("breedersMessage","");
+renderCovate();
+
+}
+
+async function loadSheet(){
+
+hide("loading");
+show("main");
+
+const {data,error}=await client.rpc("apri_coppia_da_tag",{
+p_codice:codiceTag
+});
+
+if(error){
+hide("main");
+message("globalMessage",error.message,"error");
+return;
+}
+
+if(!data||!data.successo||!data.coppia){
+hide("main");
+message("globalMessage",data?.errore||"Scheda non trovata o non autorizzata.","error");
+return;
+}
+
+coppia=data.coppia;
+stagioni=data.stagioni||[];
+
+$("pairTitle").textContent="Coppia "+(coppia.codice||"");
+$("pairCode").textContent="Codice identificativo: "+coppia.id;
+
+$("seasonSelect").replaceChildren();
+
+if(stagioni.length===0){
+$("seasonMessage").textContent="Non ci sono ancora stagioni registrate.";
+hide("breedersForm");
+$("covateList").textContent="Registra il primo uovo o crea una stagione per iniziare.";
+return;
+}
+
+stagioni.forEach(s=>{
+const option=document.createElement("option");
+option.value=s.id;
+option.textContent=s.anno;
+$("seasonSelect").appendChild(option);
+});
+
+$("seasonSelect").value=stagioni[0].id;
+renderSeason();
+
+}
+
+$("seasonSelect").addEventListener("change",renderSeason);
+
+$("breedersForm").addEventListener("submit",async e=>{
+
+e.preventDefault();
+if(!stagioneSelezionata)return;
+
+const button=$("breedersButton");
+button.disabled=true;
+message("breedersMessage","Salvataggio in corso...");
+
+const {data,error}=await client.rpc("aggiorna_riproduttori_stagione",{
+p_anno_id:stagioneSelezionata.id,
+p_maschio_anello:$("maschio_anello").value,
+p_maschio_mutazione:$("maschio_mutazione").value,
+p_femmina_anello:$("femmina_anello").value,
+p_femmina_mutazione:$("femmina_mutazione").value
+});
+
+button.disabled=false;
+
+if(error){
+message("breedersMessage","Errore: "+error.message,"error");
+return;
+}
+
+stagioneSelezionata.maschio_anello=$("maschio_anello").value.trim()||null;
+stagioneSelezionata.maschio_mutazione=$("maschio_mutazione").value.trim()||null;
+stagioneSelezionata.femmina_anello=$("femmina_anello").value.trim()||null;
+stagioneSelezionata.femmina_mutazione=$("femmina_mutazione").value.trim()||null;
+
+message("breedersMessage","Riproduttori salvati correttamente.","success");
+
+});
+
+$("newCovataForm").addEventListener("submit",async e=>{
+
+e.preventDefault();
+
+if(!stagioneSelezionata){
+message("newCovataMessage","Seleziona una stagione.","error");
+return;
+}
+
+const numero=Number($("newNumero").value);
+const gabbia=$("newGabbia").value.trim();
+const data=$("newData").value;
+
+if(!Number.isInteger(numero)||numero<1){
+message("newCovataMessage","Inserisci un numero covata valido.","error");
+return;
+}
+
+if(stagioneSelezionata.covate?.some(c=>Number(c.numero)===numero)){
+message("newCovataMessage","Questo numero di covata esiste già nella stagione.","error");
+return;
+}
+
+if(data&&Number(data.slice(0,4))!==Number(stagioneSelezionata.anno)){
+message("newCovataMessage","La data di deposizione deve appartenere all'anno selezionato.","error");
+return;
+}
+
+const button=$("newCovataButton");
+button.disabled=true;
+message("newCovataMessage","Creazione in corso...");
+
+const {data:result,error}=await client.rpc("crea_covata_per_coppia",{
+p_coppia_id:coppia.id,
+p_anno_id:stagioneSelezionata.id,
+p_numero:numero,
+p_gabbia:gabbia||null,
+p_data_deposizione:data||null
+});
+
+button.disabled=false;
+
+if(error){
+message("newCovataMessage","Errore: "+error.message,"error");
+return;
+}
+
+if(!result||result.successo!==true){
+message("newCovataMessage",result?.errore||"Impossibile creare la covata.","error");
+return;
+}
+
+message("newCovataMessage","Covata creata correttamente.","success");
+$("newCovataForm").reset();
+
+await loadSheet();
+$("seasonSelect").value=stagioneSelezionata?.id||stagioni[0]?.id;
+renderSeason();
+
+});
+
+$("loginForm").addEventListener("submit",async e=>{
+
+e.preventDefault();
+message("loginMessage","Accesso in corso...");
+
+const {error}=await client.auth.signInWithPassword({
+email:$("email").value.trim(),
+password:$("password").value
+});
+
+if(error){
+message("loginMessage",error.message,"error");
+return;
+}
+
+hide("login");
+await loadSheet();
+
+});
+
+if(!client){
+hide("loading");
+message("globalMessage","Connessione Supabase non inizializzata.","error");
+return;
+}
+
+if(!codiceTag){
+hide("loading");
+message("globalMessage","Codice NFC mancante nel collegamento.","error");
+return;
+}
+
+const {data:sessionData,error:sessionError}=await client.auth.getSession();
+
+hide("loading");
+
+if(sessionError){
+message("globalMessage",sessionError.message,"error");
+return;
+}
+
+if(!sessionData.session){
+show("login");
+}else{
+await loadSheet();
+}
+
+})();
+</script>
+</body>
+</html>

@@ -12,17 +12,34 @@ function mostraUtente(user) {
     loginArea.hidden = true;
     appArea.hidden = false;
     userEmail.textContent = "Account: " + user.email;
+    caricaStatistiche();
 }
 
 function mostraLogin() {
     loginArea.hidden = false;
     appArea.hidden = true;
-    userEmail.textContent = "";
+}
+
+async function caricaStatistiche() {
+    const tabelle = ["coppie", "covate", "uova", "pulli"];
+    const elementi = document.querySelectorAll(".stat-card strong");
+
+    for (let i = 0; i < tabelle.length; i++) {
+        const { count, error } = await client
+            .from(tabelle[i])
+            .select("*", { count: "exact", head: true });
+
+        if (error) {
+            console.error("Errore conteggio " + tabelle[i], error);
+            elementi[i].textContent = "!";
+        } else {
+            elementi[i].textContent = count;
+        }
+    }
 }
 
 loginForm.addEventListener("submit", async function(event) {
     event.preventDefault();
-
     authMessage.textContent = "Accesso in corso...";
 
     const email = document.getElementById("email").value.trim();
@@ -46,19 +63,18 @@ logoutButton.addEventListener("click", async function() {
     const { error } = await client.auth.signOut();
 
     if (error) {
-        authMessage.textContent = "Errore durante l'uscita: " + error.message;
+        authMessage.textContent = error.message;
         return;
     }
 
     mostraLogin();
-    authMessage.textContent = "Hai effettuato la disconnessione.";
 });
 
 async function controllaSessione() {
     const { data, error } = await client.auth.getSession();
 
     if (error) {
-        authMessage.textContent = "Errore: " + error.message;
+        authMessage.textContent = error.message;
         return;
     }
 

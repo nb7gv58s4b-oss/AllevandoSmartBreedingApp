@@ -12,6 +12,11 @@ const coppiaForm = document.getElementById("coppia-form");
 const coppiaMessage = document.getElementById("coppia-message");
 const listaCoppie = document.getElementById("lista-coppie");
 const salvaCoppiaButton = document.getElementById("salva-coppia");
+const annullaModificaButton = document.getElementById("annulla-modifica");
+const titoloFormCoppia = document.getElementById("titolo-form-coppia");
+const numeroCoppie = document.getElementById("numero-coppie");
+
+let coppiaInModifica = null;
 
 function mostraLogin() {
     loginArea.hidden = false;
@@ -44,11 +49,29 @@ async function caricaStatistiche() {
             .select("*", { count: "exact", head: true });
 
         elemento.textContent = error ? "!" : count;
-        
+
         if (error) {
             console.error("Errore statistiche:", voce.tabella, error);
         }
     }
+}
+
+function creaElemento(tag, classe, testo) {
+    const elemento = document.createElement(tag);
+
+    if (classe) elemento.className = classe;
+    if (testo !== undefined) elemento.textContent = testo;
+
+    return elemento;
+}
+
+function campoSoggetto(contenitore, etichetta, valore) {
+    const riga = creaElemento("div", "bird-detail");
+    const nome = creaElemento("span", "", etichetta);
+    const dato = creaElemento("strong", "", valore || "Non inserito");
+
+    riga.append(nome, dato);
+    contenitore.appendChild(riga);
 }
 
 async function caricaCoppie() {
@@ -56,7 +79,7 @@ async function caricaCoppie() {
 
     const { data, error } = await client
         .from("coppie")
-        .select("id, codice, created_at")
+        .select("id, codice, maschio_anello, maschio_mutazione, femmina_anello, femmina_mutazione, created_at")
         .order("created_at", { ascending: false });
 
     if (error) {
@@ -67,32 +90,138 @@ async function caricaCoppie() {
 
     listaCoppie.replaceChildren();
 
-    if (!data || data.length === 0) {
-        listaCoppie.textContent = "Non hai ancora registrato coppie.";
+    const totale = data ? data.length : 0;
+    numeroCoppie.textContent = totale + (totale === 1 ? " coppia" : " coppie");
+
+    if (!data || totale === 0) {
+        listaCoppie.appendChild(
+            creaElemento("p", "empty-state", "Non hai ancora registrato coppie.")
+        );
         return;
     }
 
     data.forEach(coppia => {
-        const elemento = document.createElement("div");
-        elemento.className = "coppia-item";
+        const card = creaElemento("article", "coppia-card");
 
-        const nome = document.createElement("strong");
-        nome.textContent = coppia.codice;
+        const intestazione = creaElemento("div", "coppia-card-header");
+        const codice = creaElemento("h3", "", coppia.codice);
+        const etichetta = creaElemento("span", "status-label", "Registrata");
 
-        elemento.appendChild(nome);
-        listaCoppie.appendChild(elemento);
+        intestazione.append(codice, etichetta);
+
+        const soggetti = creaElemento("div", "birds-grid");
+
+        const maschio = creaElemento("div", "bird-card male-card");
+        const titoloMaschio = creaElemento("h4", "", "♂ Maschio");
+        maschio.appendChild(titoloMaschio);
+        campoSoggetto(maschio, "Anello", coppia.maschio_anello);
+        campoSoggetto(maschio, "Mutazione", coppia.maschio_mutazione);
+
+        const femmina = creaElemento("div", "bird-card female-card");
+        const titoloFemmina = creaElemento("h4", "", "♀ Femmina");
+        femmina.appendChild(titoloFemmina);
+        campoSoggetto(femmina, "Anello", coppia.femmina_anello);
+        campoSoggetto(femmina, "Mutazione", coppia.femmina_mutazione);
+
+        soggetti.append(maschio, femmina);
+
+        const azioni = creaElemento("div", "card-actions");
+
+        const modificaButton = creaElemento("button", "edit-button", "Modifica");
+        modificaButton.type = "button";
+        modificaButton.addEventListener("click", () => modificaCoppia(coppia));
+
+        const eliminaButton = creaElemento("button", "delete-button", "Elimina");
+        eliminaButton.type = "button";
+        eliminaButton.addEventListener("click", () => eliminaCoppia(coppia));
+
+        azioni.append(modificaButton, eliminaButton);
+        card.append(intestazione, soggetti, azioni);
+        listaCoppie.appendChild(card);
     });
+}
+
+function modificaCoppia(coppia) {
+    coppiaInModifica = coppia.id;
+
+    document.getElementById("codice-coppia").value = coppia.codice || "";
+    document.getElementById("maschio-anello").value = coppia.maschio_anello || "";
+    document.getElementById("maschio-mutazione").value = coppia.maschio_mutazione || "";
+    document.getElementById("femmina-anello").value = coppia.femmina_anello || "";
+    document.getElementById("femmina-mutazione").value = coppia.femmina_mutazione || "";
+
+    titoloFormCoppia.textContent = "Modifica coppia " + coppia.codice;
+    salvaCoppiaButton.textContent = "Aggiorna coppia";
+    annullaModificaButton.hidden = false;
+    coppiaMessage.textContent = "";
+
+    document.getElementById("coppie-section").scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+    });
+}
+
+function resetFormCoppia() {
+    coppiaInModifica = null;
+    coppiaForm.reset();
+
+    titoloFormCoppia.textContent = "Registra una nuova coppia";
+    salvaCoppiaButton.textContent = "Salva coppia";
+    annullaModificaButton.hidden = true;
+}
+
+annullaModificaButton.addEventListener("click", () => {
+    resetFormCoppia();
+    coppiaMessage.textContent = "";
+});
+
+async function eliminaCoppia(coppia) {
+    const conferma = confirm(
+        "Vuoi eliminare definitivamente la coppia " + coppia.codice + "?"
+    );
+
+    if (!conferma) return;
+
+    const { data: userData, error: userError } = await client.auth.getUser();
+
+    if (userError || !userData.user) {
+        alert("Sessione non valida. Accedi nuovamente.");
+        return;
+    }
+
+    const { error } = await client
+        .from("coppie")
+        .delete()
+        .eq("id", coppia.id)
+        .eq("user_id", userData.user.id);
+
+    if (error) {
+        alert("Errore durante l'eliminazione: " + error.message);
+        console.error(error);
+        return;
+    }
+
+    if (coppiaInModifica === coppia.id) {
+        resetFormCoppia();
+    }
+
+    await caricaCoppie();
+    await caricaStatistiche();
 }
 
 coppiaForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
-    const codice = document
-        .getElementById("codice-coppia")
-        .value.trim();
+    const dati = {
+        codice: document.getElementById("codice-coppia").value.trim(),
+        maschio_anello: document.getElementById("maschio-anello").value.trim(),
+        maschio_mutazione: document.getElementById("maschio-mutazione").value.trim(),
+        femmina_anello: document.getElementById("femmina-anello").value.trim(),
+        femmina_mutazione: document.getElementById("femmina-mutazione").value.trim()
+    };
 
-    if (!codice) {
-        coppiaMessage.textContent = "Inserisci il codice della coppia.";
+    if (!dati.codice) {
+        coppiaMessage.textContent = "Inserisci il codice identificativo.";
         return;
     }
 
@@ -100,26 +229,40 @@ coppiaForm.addEventListener("submit", async function(event) {
     coppiaMessage.textContent = "Salvataggio in corso...";
 
     try {
-        const { data: userData, error: userError } =
-            await client.auth.getUser();
+        const { data: userData, error: userError } = await client.auth.getUser();
 
         if (userError || !userData.user) {
             throw new Error("Sessione non valida. Accedi nuovamente.");
         }
 
-        const { error } = await client
-            .from("coppie")
-            .insert({
-                user_id: userData.user.id,
-                codice: codice
-            });
+        let risultato;
 
-        if (error) {
-            throw error;
+        if (coppiaInModifica) {
+            risultato = await client
+                .from("coppie")
+                .update(dati)
+                .eq("id", coppiaInModifica)
+                .eq("user_id", userData.user.id);
+        } else {
+            risultato = await client
+                .from("coppie")
+                .insert({
+                    ...dati,
+                    user_id: userData.user.id
+                });
         }
 
-        coppiaMessage.textContent = "Coppia registrata correttamente.";
-        coppiaForm.reset();
+        if (risultato.error) {
+            throw risultato.error;
+        }
+
+        const eraModifica = Boolean(coppiaInModifica);
+
+        resetFormCoppia();
+
+        coppiaMessage.textContent = eraModifica
+            ? "Coppia aggiornata correttamente."
+            : "Coppia registrata correttamente.";
 
         await caricaCoppie();
         await caricaStatistiche();

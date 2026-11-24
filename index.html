@@ -23,10 +23,8 @@
             <form id="login-form">
                 <label for="email">Email</label>
                 <input type="email" id="email" required placeholder="La tua email">
-
                 <label for="password">Password</label>
                 <input type="password" id="password" required placeholder="La tua password">
-
                 <button type="submit">Accedi</button>
             </form>
             <p id="auth-message" role="status"></p>
@@ -115,7 +113,6 @@
         </section>
 
         <section class="section-block" id="coppie-section">
-
             <div class="section-title">
                 <div>
                     <p class="eyebrow">ANAGRAFICA RIPRODUTTORI</p>
@@ -134,9 +131,7 @@
                 </div>
 
                 <form id="coppia-form">
-
                     <div class="form-grid">
-
                         <div class="form-field full-width">
                             <label for="codice-coppia">Codice identificativo della coppia *</label>
                             <input type="text" id="codice-coppia" required placeholder="Es. COPPIA-001">
@@ -150,10 +145,8 @@
                                     <p>Dati del riproduttore</p>
                                 </div>
                             </div>
-
                             <label for="maschio-anello">Numero anello</label>
                             <input type="text" id="maschio-anello" placeholder="Numero identificativo">
-
                             <label for="maschio-mutazione">Mutazione</label>
                             <input type="text" id="maschio-mutazione" placeholder="Es. Bruno, Agata...">
                         </div>
@@ -166,21 +159,17 @@
                                     <p>Dati della riproduttrice</p>
                                 </div>
                             </div>
-
                             <label for="femmina-anello">Numero anello</label>
                             <input type="text" id="femmina-anello" placeholder="Numero identificativo">
-
                             <label for="femmina-mutazione">Mutazione</label>
                             <input type="text" id="femmina-mutazione" placeholder="Es. Bruno, Agata...">
                         </div>
-
                     </div>
 
                     <div class="form-actions">
                         <button type="submit" id="salva-coppia">Salva coppia</button>
                         <button type="button" id="annulla-modifica" class="secondary-button" hidden>Annulla modifica</button>
                     </div>
-
                 </form>
 
                 <p id="coppia-message" role="status"></p>
@@ -193,23 +182,64 @@
                 </div>
             </div>
 
-            <div id="lista-coppie" class="coppie-grid">
-                Caricamento...
-            </div>
-
+            <div id="lista-coppie" class="coppie-grid">Caricamento...</div>
         </section>
 
         <section class="section-block" id="stagioni-section">
-            <h2>Stagioni riproduttive</h2>
+            <div class="section-title">
+                <div>
+                    <p class="eyebrow">PROGRAMMAZIONE RIPRODUTTIVA</p>
+                    <h2>Stagioni riproduttive</h2>
+                    <p>Organizza gli anni riproduttivi di ogni coppia.</p>
+                </div>
+                <span class="counter" id="numero-stagioni">0 stagioni</span>
+            </div>
+
             <div class="quick-panel">
-                Le stagioni saranno collegate alle singole coppie.
+                <div class="form-heading">
+                    <h3>Apri una nuova stagione</h3>
+                    <p>Seleziona la coppia e l'anno riproduttivo.</p>
+                </div>
+
+                <form id="stagione-form">
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="stagione-coppia">Coppia riproduttiva *</label>
+                            <select id="stagione-coppia" required>
+                                <option value="">Seleziona una coppia</option>
+                            </select>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="stagione-anno">Anno riproduttivo *</label>
+                            <input type="number" id="stagione-anno" min="2000" max="2100" required>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" id="crea-stagione">Crea stagione e prime 3 covate</button>
+                    </div>
+                </form>
+
+                <p id="stagione-message" role="status"></p>
+            </div>
+
+            <div class="list-heading">
+                <div>
+                    <h3>Archivio stagioni</h3>
+                    <p>Storico degli anni riproduttivi delle tue coppie.</p>
+                </div>
+            </div>
+
+            <div id="lista-stagioni" class="coppie-grid">
+                Caricamento stagioni...
             </div>
         </section>
 
         <section class="section-block" id="covate-section">
             <h2>Schede covata</h2>
             <div class="quick-panel">
-                Ogni covata avrà la propria scheda digitale e il proprio codice NFC / QR.
+                Le covate saranno gestite attraverso le singole stagioni riproduttive.
             </div>
         </section>
 

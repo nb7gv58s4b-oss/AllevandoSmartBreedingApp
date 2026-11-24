@@ -11,190 +11,236 @@
 </head>
 <body>
 
-    <div id="login-area">
-        <header>
-            <h1>ALLEVANDO Smart Breeding™</h1>
-            <p>Il gestionale intelligente per l'allevamento ornitologico</p>
-        </header>
+<div id="login-area">
+    <header>
+        <h1>ALLEVANDO <span>Smart Breeding™</span></h1>
+        <p>Il gestionale intelligente per l'allevamento ornitologico</p>
+    </header>
 
-        <main>
-            <section class="welcome">
-                <h2>Accedi al tuo allevamento</h2>
+    <main>
+        <section class="welcome">
+            <h2>Accedi al tuo allevamento</h2>
+            <form id="login-form">
+                <label for="email">Email</label>
+                <input type="email" id="email" required placeholder="La tua email">
 
-                <form id="login-form">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" required placeholder="La tua email">
+                <label for="password">Password</label>
+                <input type="password" id="password" required placeholder="La tua password">
 
-                    <label for="password">Password</label>
-                    <input type="password" id="password" required placeholder="La tua password">
+                <button type="submit">Accedi</button>
+            </form>
+            <p id="auth-message" role="status"></p>
+        </section>
+    </main>
+</div>
 
-                    <button type="submit">Accedi</button>
+<div id="app-area" hidden>
+
+    <header class="app-header">
+        <div>
+            <h1>ALLEVANDO <span>Smart Breeding™</span></h1>
+            <p>Gestione intelligente dell'allevamento</p>
+        </div>
+        <button id="logout-button" type="button">Esci</button>
+    </header>
+
+    <main class="dashboard">
+
+        <section class="dashboard-heading">
+            <div>
+                <p class="eyebrow">AREA PERSONALE</p>
+                <h2>Dashboard</h2>
+                <p>Benvenuto nel tuo allevamento.</p>
+            </div>
+            <p id="user-email"></p>
+        </section>
+
+        <section class="stats">
+            <article class="stat-card">
+                <span>COPPIE</span>
+                <strong id="stat-coppie">0</strong>
+                <small>Coppie registrate</small>
+            </article>
+            <article class="stat-card">
+                <span>COVATE</span>
+                <strong id="stat-covate">0</strong>
+                <small>Covate registrate</small>
+            </article>
+            <article class="stat-card">
+                <span>UOVA</span>
+                <strong id="stat-uova">0</strong>
+                <small>Uova registrate</small>
+            </article>
+            <article class="stat-card">
+                <span>PULLI</span>
+                <strong id="stat-pulli">0</strong>
+                <small>Nascite registrate</small>
+            </article>
+        </section>
+
+        <section class="section-block">
+            <h2>Gestione allevamento</h2>
+            <div class="module-grid">
+                <a class="module-card" href="#coppie-section">
+                    <span class="module-icon">♧</span>
+                    <h3>Le mie coppie</h3>
+                    <p>Gestisci maschi, femmine e accoppiamenti.</p>
+                </a>
+                <a class="module-card" href="#stagioni-section">
+                    <span class="module-icon">📅</span>
+                    <h3>Stagioni riproduttive</h3>
+                    <p>Organizza gli anni riproduttivi.</p>
+                </a>
+                <a class="module-card" href="#covate-section">
+                    <span class="module-icon">🥚</span>
+                    <h3>Schede covata</h3>
+                    <p>Consulta e registra ogni covata.</p>
+                </a>
+                <a class="module-card" href="#uova-section">
+                    <span class="module-icon">◉</span>
+                    <h3>Registro uova</h3>
+                    <p>Deposizione, speratura e schiusa.</p>
+                </a>
+                <a class="module-card" href="#pulli-section">
+                    <span class="module-icon">🐣</span>
+                    <h3>Nascite e pulli</h3>
+                    <p>Anelli, mutazioni, crescita e svezzamento.</p>
+                </a>
+                <a class="module-card" href="#smart-section">
+                    <span class="module-icon">📱</span>
+                    <h3>Smart Card NFC / QR</h3>
+                    <p>Accedi alle schede covata tramite scansione.</p>
+                </a>
+            </div>
+        </section>
+
+        <section class="section-block" id="coppie-section">
+
+            <div class="section-title">
+                <div>
+                    <p class="eyebrow">ANAGRAFICA RIPRODUTTORI</p>
+                    <h2>Le mie coppie</h2>
+                    <p>Registra e gestisci i tuoi soggetti riproduttori.</p>
+                </div>
+                <span class="counter" id="numero-coppie">0 coppie</span>
+            </div>
+
+            <div class="quick-panel">
+                <div class="form-heading">
+                    <div>
+                        <h3 id="titolo-form-coppia">Registra una nuova coppia</h3>
+                        <p>Inserisci il codice identificativo e i dati dei riproduttori.</p>
+                    </div>
+                </div>
+
+                <form id="coppia-form">
+
+                    <div class="form-grid">
+
+                        <div class="form-field full-width">
+                            <label for="codice-coppia">Codice identificativo della coppia *</label>
+                            <input type="text" id="codice-coppia" required placeholder="Es. COPPIA-001">
+                        </div>
+
+                        <div class="subject-panel male-panel">
+                            <div class="subject-heading">
+                                <span class="subject-icon">♂</span>
+                                <div>
+                                    <h3>Maschio</h3>
+                                    <p>Dati del riproduttore</p>
+                                </div>
+                            </div>
+
+                            <label for="maschio-anello">Numero anello</label>
+                            <input type="text" id="maschio-anello" placeholder="Numero identificativo">
+
+                            <label for="maschio-mutazione">Mutazione</label>
+                            <input type="text" id="maschio-mutazione" placeholder="Es. Bruno, Agata...">
+                        </div>
+
+                        <div class="subject-panel female-panel">
+                            <div class="subject-heading">
+                                <span class="subject-icon">♀</span>
+                                <div>
+                                    <h3>Femmina</h3>
+                                    <p>Dati della riproduttrice</p>
+                                </div>
+                            </div>
+
+                            <label for="femmina-anello">Numero anello</label>
+                            <input type="text" id="femmina-anello" placeholder="Numero identificativo">
+
+                            <label for="femmina-mutazione">Mutazione</label>
+                            <input type="text" id="femmina-mutazione" placeholder="Es. Bruno, Agata...">
+                        </div>
+
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" id="salva-coppia">Salva coppia</button>
+                        <button type="button" id="annulla-modifica" class="secondary-button" hidden>Annulla modifica</button>
+                    </div>
+
                 </form>
 
-                <p id="auth-message" role="status"></p>
-            </section>
-        </main>
-    </div>
-
-    <div id="app-area" hidden>
-        <header class="app-header">
-            <div>
-                <h1>ALLEVANDO <span>Smart Breeding™</span></h1>
-                <p>Gestione intelligente dell'allevamento</p>
+                <p id="coppia-message" role="status"></p>
             </div>
-            <button id="logout-button" type="button">Esci</button>
-        </header>
 
-        <main class="dashboard">
-
-            <section class="dashboard-heading">
+            <div class="list-heading">
                 <div>
-                    <p class="eyebrow">AREA PERSONALE</p>
-                    <h2>Dashboard</h2>
-                    <p>Benvenuto nel tuo allevamento.</p>
+                    <h3>Archivio coppie</h3>
+                    <p>Tutte le coppie registrate nel tuo allevamento.</p>
                 </div>
-                <p id="user-email"></p>
-            </section>
+            </div>
 
-            <section class="stats">
-                <article class="stat-card">
-                    <span>COPPIE</span>
-                    <strong id="stat-coppie">0</strong>
-                    <small>Coppie registrate</small>
-                </article>
+            <div id="lista-coppie" class="coppie-grid">
+                Caricamento...
+            </div>
 
-                <article class="stat-card">
-                    <span>COVATE</span>
-                    <strong id="stat-covate">0</strong>
-                    <small>Covate registrate</small>
-                </article>
+        </section>
 
-                <article class="stat-card">
-                    <span>UOVA</span>
-                    <strong id="stat-uova">0</strong>
-                    <small>Uova registrate</small>
-                </article>
+        <section class="section-block" id="stagioni-section">
+            <h2>Stagioni riproduttive</h2>
+            <div class="quick-panel">
+                Le stagioni saranno collegate alle singole coppie.
+            </div>
+        </section>
 
-                <article class="stat-card">
-                    <span>PULLI</span>
-                    <strong id="stat-pulli">0</strong>
-                    <small>Nascite registrate</small>
-                </article>
-            </section>
+        <section class="section-block" id="covate-section">
+            <h2>Schede covata</h2>
+            <div class="quick-panel">
+                Ogni covata avrà la propria scheda digitale e il proprio codice NFC / QR.
+            </div>
+        </section>
 
-            <section class="section-block">
-                <h2>Gestione allevamento</h2>
+        <section class="section-block" id="uova-section">
+            <h2>Registro uova</h2>
+            <div class="quick-panel">
+                Registro delle deposizioni e delle sperature.
+            </div>
+        </section>
 
-                <div class="module-grid">
-                    <a class="module-card" href="#coppie-section">
-                        <span class="module-icon">♧</span>
-                        <h3>Le mie coppie</h3>
-                        <p>Gestisci maschi, femmine e accoppiamenti.</p>
-                    </a>
+        <section class="section-block" id="pulli-section">
+            <h2>Nascite e pulli</h2>
+            <div class="quick-panel">
+                Registro delle nascite, inanellamenti e svezzamenti.
+            </div>
+        </section>
 
-                    <a class="module-card" href="#stagioni-section">
-                        <span class="module-icon">📅</span>
-                        <h3>Stagioni riproduttive</h3>
-                        <p>Organizza gli anni riproduttivi.</p>
-                    </a>
+        <section class="section-block" id="smart-section">
+            <h2>Smart Card NFC / QR</h2>
+            <div class="quick-panel">
+                Collegamento delle schede digitali alle card fisiche.
+            </div>
+        </section>
 
-                    <a class="module-card" href="#covate-section">
-                        <span class="module-icon">🥚</span>
-                        <h3>Schede covata</h3>
-                        <p>Consulta e registra ogni covata.</p>
-                    </a>
+    </main>
+</div>
 
-                    <a class="module-card" href="#uova-section">
-                        <span class="module-icon">◉</span>
-                        <h3>Registro uova</h3>
-                        <p>Deposizione, speratura e schiusa.</p>
-                    </a>
-
-                    <a class="module-card" href="#pulli-section">
-                        <span class="module-icon">🐣</span>
-                        <h3>Nascite e pulli</h3>
-                        <p>Anelli, mutazioni, crescita e svezzamento.</p>
-                    </a>
-
-                    <a class="module-card" href="#smart-section">
-                        <span class="module-icon">📱</span>
-                        <h3>Smart Card NFC / QR</h3>
-                        <p>Accedi alle schede covata tramite scansione.</p>
-                    </a>
-                </div>
-            </section>
-
-            <section class="section-block" id="coppie-section">
-                <h2>Le mie coppie riproduttive</h2>
-
-                <div class="quick-panel">
-                    <h3>Registra una nuova coppia</h3>
-
-                    <form id="coppia-form">
-                        <label for="codice-coppia">Codice identificativo</label>
-                        <input
-                            type="text"
-                            id="codice-coppia"
-                            placeholder="Es. COPPIA-001"
-                            required
-                        >
-
-                        <button type="submit" id="salva-coppia">
-                            Salva coppia
-                        </button>
-                    </form>
-
-                    <p id="coppia-message" role="status"></p>
-                </div>
-
-                <div class="quick-panel" style="margin-top:18px">
-                    <h3>Coppie registrate</h3>
-                    <div id="lista-coppie">Caricamento...</div>
-                </div>
-            </section>
-
-            <section class="section-block" id="stagioni-section">
-                <h2>Stagioni riproduttive</h2>
-                <div class="quick-panel">
-                    Le stagioni saranno collegate alle singole coppie.
-                </div>
-            </section>
-
-            <section class="section-block" id="covate-section">
-                <h2>Schede covata</h2>
-                <div class="quick-panel">
-                    Ogni covata avrà la propria scheda digitale e il proprio codice NFC / QR.
-                </div>
-            </section>
-
-            <section class="section-block" id="uova-section">
-                <h2>Registro uova</h2>
-                <div class="quick-panel">
-                    Registro delle deposizioni e delle sperature.
-                </div>
-            </section>
-
-            <section class="section-block" id="pulli-section">
-                <h2>Nascite e pulli</h2>
-                <div class="quick-panel">
-                    Registro delle nascite, inanellamenti e svezzamenti.
-                </div>
-            </section>
-
-            <section class="section-block" id="smart-section">
-                <h2>Smart Card NFC / QR</h2>
-                <div class="quick-panel">
-                    Collegamento delle schede digitali alle card fisiche.
-                </div>
-            </section>
-
-        </main>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/config.js"></script>
-    <script src="js/supabase.js"></script>
-    <script src="js/app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/app.js"></script>
 
 </body>
 </html>

@@ -1,5 +1,5 @@
 
 window.ALLEVANDO_CONFIG = {
-    SUPABASE_URL: "INSERISCI_QUI_PROJECT_URL",
-    SUPABASE_ANON_KEY: "INSERISCI_QUI_ANON_KEY"
+    SUPABASE_URL: "https://ausxrllnyqehkdcwhmmy.supabase.co",
+    SUPABASE_ANON_KEY: "sb_publishable_Ts7582ptxNl9qZ0IU7-U8g_jb9AZ1IO"
 };

@@ -107,7 +107,7 @@ function formattaData(data) {
 }
 
 // --------------------------------------------------
-// ARCHIVIO COPPIE E SMART CARD
+// ARCHIVIO COPPIE - SOLA VISUALIZZAZIONE
 // --------------------------------------------------
 
 async function caricaCoppie() {
@@ -140,22 +140,6 @@ async function caricaCoppie() {
         return;
     }
 
-    // Recupera le Smart Card attive associate alle coppie.
-    const { data: tags, error: erroreTags } = await client
-        .from("tag_smart")
-        .select("coppia_id, codice")
-        .eq("attivo", true);
-
-    if (erroreTags) {
-        console.error("Errore caricamento Smart Card:", erroreTags);
-    }
-
-    const tagsPerCoppia = new Map();
-
-    (tags || []).forEach(tag => {
-        tagsPerCoppia.set(tag.coppia_id, tag.codice);
-    });
-
     coppieArchivio.forEach(coppia => {
         const card = creaElemento("article", "coppia-card");
 
@@ -182,39 +166,10 @@ async function caricaCoppie() {
 
         soggetti.append(maschio, femmina);
 
-        const azioni = creaElemento("div", "card-actions");
+        // Nessun pulsante, link o accesso alla scheda digitale.
+        // La dashboard mostra le coppie esclusivamente in lettura.
 
-        const codiceTag = tagsPerCoppia.get(coppia.id);
-
-        if (codiceTag) {
-            const apriButton = creaElemento(
-                "button",
-                "open-card-button",
-                "Apri scheda digitale"
-            );
-
-            apriButton.type = "button";
-
-            apriButton.addEventListener("click", function() {
-                const destinazione = new URL("coppia.html", window.location.href);
-
-                destinazione.searchParams.set("tag", codiceTag);
-
-                window.location.href = destinazione.toString();
-            });
-
-            azioni.appendChild(apriButton);
-        } else {
-            const statoTag = creaElemento(
-                "p",
-                "empty-state",
-                "Smart Card non ancora assegnata a questa coppia."
-            );
-
-            azioni.appendChild(statoTag);
-        }
-
-        card.append(intestazione, soggetti, azioni);
+        card.append(intestazione, soggetti);
 
         listaCoppie.appendChild(card);
     });

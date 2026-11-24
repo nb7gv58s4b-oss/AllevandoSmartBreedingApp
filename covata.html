@@ -13,7 +13,7 @@ body{margin:0;background:#f3f5f2;font-family:Arial,sans-serif;color:#26352c}
 h1,h2{color:#285b3d}
 input,textarea,select{box-sizing:border-box;width:100%;padding:12px;margin:6px 0 14px;border:1px solid #ccd5ce;border-radius:8px;font-size:16px}
 label{font-weight:600;font-size:14px}
-button{background:#285b3d;color:white;border:0;border-radius:8px;padding:13px 20px;font-size:16px;font-weight:bold;cursor:pointer}
+button,.backButton{display:inline-block;background:#285b3d;color:white;border:0;border-radius:8px;padding:13px 20px;font-size:16px;font-weight:bold;cursor:pointer;text-decoration:none}
 button:disabled{opacity:.5}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .muted{color:#68776d;font-size:14px}
@@ -26,9 +26,11 @@ button:disabled{opacity:.5}
 </head>
 <body>
 <div class="page">
+
 <header class="panel">
 <h1>ALLEVANDO Smart Breeding™</h1>
 <p class="muted">Scheda digitale di riproduzione</p>
+<a id="backButton" class="backButton" href="./index.html">Torna alla dashboard</a>
 </header>
 
 <section id="login" class="panel hidden">
@@ -45,6 +47,7 @@ button:disabled{opacity:.5}
 </section>
 
 <section id="sheet" class="hidden">
+
 <div class="panel">
 <h2 id="sheetTitle">Scheda covata</h2>
 <p id="pairInfo" class="muted"></p>
@@ -54,27 +57,69 @@ button:disabled{opacity:.5}
 <form id="covataForm">
 <div class="panel">
 <h2>Dati della covata</h2>
+
 <div class="grid">
-<div><label>Gabbia</label><input id="gabbia"></div>
-<div><label>Stato</label>
+<div>
+<label>Gabbia</label>
+<input id="gabbia">
+</div>
+
+<div>
+<label>Stato</label>
 <select id="stato">
 <option value="">Da definire</option>
+<option value="programmata">Programmata</option>
 <option value="In corso">In corso</option>
 <option value="In cova">In cova</option>
 <option value="Schiusa">Schiusa</option>
 <option value="Conclusa">Conclusa</option>
-</select></div>
-<div><label>Data deposizione</label><input id="data_deposizione" type="date"></div>
-<div><label>Inizio cova</label><input id="data_inizio_cova" type="date"></div>
-<div><label>Speratura prevista</label><input id="data_speratura_prevista" type="date"></div>
-<div><label>Speratura effettiva</label><input id="data_speratura_effettiva" type="date"></div>
-<div><label>Uova deposte</label><input id="uova_deposte" type="number" min="0"></div>
-<div><label>Uova feconde</label><input id="uova_feconde" type="number" min="0"></div>
-<div><label>Schiusa prevista</label><input id="data_schiusa_prevista" type="date"></div>
-<div><label>Schiusa effettiva</label><input id="data_schiusa_effettiva" type="date"></div>
+</select>
 </div>
+
+<div>
+<label>Data deposizione</label>
+<input id="data_deposizione" type="date">
+</div>
+
+<div>
+<label>Inizio cova</label>
+<input id="data_inizio_cova" type="date">
+</div>
+
+<div>
+<label>Speratura prevista</label>
+<input id="data_speratura_prevista" type="date">
+</div>
+
+<div>
+<label>Speratura effettiva</label>
+<input id="data_speratura_effettiva" type="date">
+</div>
+
+<div>
+<label>Uova deposte</label>
+<input id="uova_deposte" type="number" min="0">
+</div>
+
+<div>
+<label>Uova feconde</label>
+<input id="uova_feconde" type="number" min="0">
+</div>
+
+<div>
+<label>Schiusa prevista</label>
+<input id="data_schiusa_prevista" type="date">
+</div>
+
+<div>
+<label>Schiusa effettiva</label>
+<input id="data_schiusa_effettiva" type="date">
+</div>
+</div>
+
 <label>Note della covata</label>
 <textarea id="note" rows="4"></textarea>
+
 <button id="saveButton" type="submit">Salva modifiche</button>
 <p id="saveMessage"></p>
 </div>
@@ -89,6 +134,7 @@ button:disabled{opacity:.5}
 <h2>Pulli</h2>
 <div id="chicks" class="muted">Nessun pullo registrato.</div>
 </div>
+
 </section>
 
 <section id="loading" class="panel">
@@ -96,6 +142,7 @@ button:disabled{opacity:.5}
 </section>
 
 <p id="globalMessage" class="error"></p>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -104,150 +151,299 @@ button:disabled{opacity:.5}
 
 <script>
 (async function(){
+
 const client=window.supabaseClient;
 const params=new URLSearchParams(location.search);
+
 const tag=params.get("tag");
+const covataId=params.get("covata");
+
 const $=id=>document.getElementById(id);
 
-let codiceTag=tag;
 let covata=null;
+let caricamentoInCorso=false;
 
 function message(id,text,cls=""){
-$(id).textContent=text;
-$(id).className=cls;
+    $(id).textContent=text;
+    $(id).className=cls;
 }
 
-function show(id){$(id).classList.remove("hidden")}
-function hide(id){$(id).classList.add("hidden")}
+function show(id){
+    $(id).classList.remove("hidden");
+}
 
-function dateValue(v){return v||""}
-function numberValue(v){return v===null||v===undefined?"":v}
+function hide(id){
+    $(id).classList.add("hidden");
+}
 
 function renderList(id,items,type){
-const area=$(id);
-area.replaceChildren();
-if(!items||!items.length){
-area.textContent=type==="egg"?"Nessun uovo registrato.":"Nessun pullo registrato.";
-return;
-}
-items.forEach(item=>{
-const div=document.createElement("div");
-div.className="item";
-if(type==="egg"){
-div.textContent="Uovo "+item.numero+" — "+(item.data_deposizione||"Data non indicata")+" — "+(item.esito_speratura||"Esito non indicato");
-}else{
-div.textContent=(item.anello||"Pullo senza anello")+" — "+(item.sesso||"Sesso non indicato")+" — "+(item.mutazione||"Mutazione non indicata")+" — "+(item.stato||"");
-}
-area.appendChild(div);
-});
+
+    const area=$(id);
+    area.replaceChildren();
+
+    if(!items||!items.length){
+        area.textContent=type==="egg"
+            ?"Nessun uovo registrato."
+            :"Nessun pullo registrato.";
+        return;
+    }
+
+    items.forEach(item=>{
+
+        const div=document.createElement("div");
+        div.className="item";
+
+        if(type==="egg"){
+
+            div.textContent=
+                "Uovo "+item.numero+
+                " — "+(item.data_deposizione||"Data non indicata")+
+                " — "+(item.esito_speratura||"Esito non indicato");
+
+        }else{
+
+            div.textContent=
+                (item.anello||"Pullo senza anello")+
+                " — "+(item.sesso||"Sesso non indicato")+
+                " — "+(item.mutazione||"Mutazione non indicata")+
+                " — "+(item.stato||"");
+
+        }
+
+        area.appendChild(div);
+    });
 }
 
 async function loadSheet(){
-hide("loading");
-show("sheet");
 
-const {data,error}=await client.rpc("apri_covata_da_tag",{p_codice:codiceTag});
-if(error||!data||!data.covata){
-hide("sheet");
-message("globalMessage",error?error.message:"Scheda non trovata o accesso non autorizzato.","error");
-return;
-}
+    if(caricamentoInCorso)return;
+    caricamentoInCorso=true;
 
-covata=data.covata;
-const c=covata;
+    hide("sheet");
+    hide("loading");
+    message("globalMessage","");
 
-$("sheetTitle").textContent="Covata n. "+c.numero;
-$("pairInfo").textContent="Coppia: "+(data.coppia?.codice||"");
-$("seasonInfo").textContent="Stagione: "+(data.stagione?.anno||"");
+    try{
 
-[
-"gabbia","data_deposizione","data_inizio_cova",
-"data_speratura_prevista","data_speratura_effettiva",
-"uova_deposte","uova_feconde","data_schiusa_prevista",
-"data_schiusa_effettiva","note","stato"
-].forEach(key=>{
-$(key).value=key.startsWith("data_")?dateValue(c[key]):key.startsWith("uova_")?numberValue(c[key]):(c[key]??"");
-});
+        const {data,error}=await client.rpc(
+            "apri_covata_coppia_da_tag",
+            {
+                p_codice:tag,
+                p_covata_id:covataId
+            }
+        );
 
-renderList("eggs",data.uova,"egg");
-renderList("chicks",data.pulli,"chick");
+        if(error)throw error;
+
+        if(!data||!data.covata){
+            throw new Error(
+                "Covata non trovata o accesso non autorizzato."
+            );
+        }
+
+        covata=data.covata;
+
+        $("sheetTitle").textContent=
+            "Covata n. "+covata.numero;
+
+        $("pairInfo").textContent=
+            "Coppia: "+(data.coppia?.codice||"");
+
+        $("seasonInfo").textContent=
+            "Stagione: "+(data.stagione?.anno||"");
+
+        const fields=[
+            "gabbia",
+            "data_deposizione",
+            "data_inizio_cova",
+            "data_speratura_prevista",
+            "data_speratura_effettiva",
+            "uova_deposte",
+            "uova_feconde",
+            "data_schiusa_prevista",
+            "data_schiusa_effettiva",
+            "note",
+            "stato"
+        ];
+
+        fields.forEach(key=>{
+            const value=covata[key];
+
+            $(key).value=
+                value===null||value===undefined
+                ?""
+                :value;
+        });
+
+        renderList("eggs",data.uova,"egg");
+        renderList("chicks",data.pulli,"chick");
+
+        show("sheet");
+
+    }catch(error){
+
+        message(
+            "globalMessage",
+            error.message||"Errore durante il caricamento.",
+            "error"
+        );
+
+    }finally{
+        caricamentoInCorso=false;
+    }
 }
 
 async function checkSession(){
-const {data,error}=await client.auth.getSession();
-hide("loading");
-if(error){
-message("globalMessage",error.message,"error");
-return;
-}
-if(!data.session){
-show("login");
-return;
-}
-await loadSheet();
+
+    const {data,error}=await client.auth.getSession();
+
+    hide("loading");
+
+    if(error){
+        message("globalMessage",error.message,"error");
+        return;
+    }
+
+    if(!data.session){
+        show("login");
+        return;
+    }
+
+    hide("login");
+    await loadSheet();
 }
 
 if(!client){
-message("globalMessage","Connessione Supabase non inizializzata.","error");
-hide("loading");
-return;
-}
-if(!codiceTag){
-message("globalMessage","Codice NFC mancante nel collegamento.","error");
-hide("loading");
-return;
+
+    hide("loading");
+    message(
+        "globalMessage",
+        "Connessione Supabase non inizializzata.",
+        "error"
+    );
+    return;
 }
 
-$("loginForm").addEventListener("submit",async e=>{
-e.preventDefault();
-message("loginMessage","Accesso in corso...");
-const {error}=await client.auth.signInWithPassword({
-email:$("email").value.trim(),
-password:$("password").value
-});
-if(error){
-message("loginMessage",error.message,"error");
-return;
+if(!tag||!covataId){
+
+    hide("loading");
+    message(
+        "globalMessage",
+        "Collegamento incompleto: manca il codice NFC oppure l'ID della covata.",
+        "error"
+    );
+    return;
 }
-hide("login");
-await loadSheet();
+
+$("backButton").href=
+    "./coppia.html?tag="+encodeURIComponent(tag);
+
+$("loginForm").addEventListener("submit",async e=>{
+
+    e.preventDefault();
+
+    message("loginMessage","Accesso in corso...");
+
+    const {error}=await client.auth.signInWithPassword({
+
+        email:$("email").value.trim(),
+        password:$("password").value
+
+    });
+
+    if(error){
+
+        message("loginMessage",error.message,"error");
+        return;
+    }
+
+    hide("login");
+    await loadSheet();
 });
 
 $("covataForm").addEventListener("submit",async e=>{
-e.preventDefault();
-if(!covata)return;
-const button=$("saveButton");
-button.disabled=true;
-message("saveMessage","Salvataggio in corso...");
 
-const n=id=>$(id).value===""?null:Number($(id).value);
-const d=id=>$(id).value||null;
+    e.preventDefault();
 
-const {data,error}=await client.rpc("salva_covata_da_tag",{
-p_codice:codiceTag,
-p_gabbia:$("gabbia").value||null,
-p_data_deposizione:d("data_deposizione"),
-p_data_inizio_cova:d("data_inizio_cova"),
-p_data_speratura_prevista:d("data_speratura_prevista"),
-p_data_speratura_effettiva:d("data_speratura_effettiva"),
-p_uova_deposte:n("uova_deposte"),
-p_uova_feconde:n("uova_feconde"),
-p_data_schiusa_prevista:d("data_schiusa_prevista"),
-p_data_schiusa_effettiva:d("data_schiusa_effettiva"),
-p_note:$("note").value||null,
-p_stato:$("stato").value||null
-});
+    if(!covata)return;
 
-button.disabled=false;
-if(error){
-message("saveMessage","Errore: "+error.message,"error");
-return;
-}
-message("saveMessage","Modifiche salvate correttamente.","success");
+    const button=$("saveButton");
+
+    button.disabled=true;
+
+    message(
+        "saveMessage",
+        "Salvataggio in corso..."
+    );
+
+    const n=id=>
+        $(id).value===""
+        ?null
+        :Number($(id).value);
+
+    const d=id=>
+        $(id).value||null;
+
+    try{
+
+        const {data,error}=await client.rpc(
+            "salva_covata_da_tag",
+            {
+                p_codice:tag,
+                p_covata_id:covata.id,
+                p_gabbia:$("gabbia").value||null,
+                p_data_deposizione:d("data_deposizione"),
+                p_data_inizio_cova:d("data_inizio_cova"),
+                p_data_speratura_prevista:d("data_speratura_prevista"),
+                p_data_speratura_effettiva:d("data_speratura_effettiva"),
+                p_uova_deposte:n("uova_deposte"),
+                p_uova_feconde:n("uova_feconde"),
+                p_data_schiusa_prevista:d("data_schiusa_prevista"),
+                p_data_schiusa_effettiva:d("data_schiusa_effettiva"),
+                p_note:$("note").value||null,
+                p_stato:$("stato").value||null
+            }
+        );
+
+        if(error)throw error;
+
+        if(data&&!data.successo){
+            throw new Error(data.errore||"Salvataggio non riuscito.");
+        }
+
+        message(
+            "saveMessage",
+            "Modifiche salvate correttamente.",
+            "success"
+        );
+
+        await loadSheet();
+
+        message(
+            "saveMessage",
+            "Modifiche salvate correttamente.",
+            "success"
+        );
+
+    }catch(error){
+
+        message(
+            "saveMessage",
+            "Errore: "+(error.message||"Salvataggio non riuscito."),
+            "error"
+        );
+
+    }finally{
+
+        button.disabled=false;
+
+    }
 });
 
 await checkSession();
+
 })();
 </script>
+
 </body>
 </html>

@@ -172,7 +172,8 @@ input:focus, select:focus {
 /* DASHBOARD */
 
 .dashboard {
-    width: min(1180px, 92%);
+    width: 96%;
+    max-width: 1600px;
     margin: 0 auto;
     padding: 36px 0 60px;
 }
@@ -591,37 +592,36 @@ input:focus, select:focus {
     overflow-wrap: anywhere;
 }
 
-/* TABELLE COMPATTE */
+/* TABELLE */
 
 .table-responsive {
     width: 100%;
     max-width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: visible;
     border: 1px solid var(--border);
     border-radius: 10px;
     background: var(--white);
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: var(--green-light) var(--green-pale);
 }
 
 .responsive-table {
     width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
     color: var(--text);
-    font-size: 12px;
+    font-size: 11px;
     text-align: left;
 }
 
 .responsive-table th {
-    padding: 12px 13px;
+    padding: 10px 7px;
     background: var(--green);
     color: var(--white);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
     border-right: 1px solid rgba(255,255,255,.12);
 }
 
@@ -630,10 +630,13 @@ input:focus, select:focus {
 }
 
 .responsive-table td {
-    padding: 11px 13px;
+    padding: 9px 7px;
     border-bottom: 1px solid var(--border);
     vertical-align: middle;
-    line-height: 1.4;
+    line-height: 1.35;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
 
 .responsive-table tbody tr:nth-child(even) {
@@ -654,60 +657,69 @@ input:focus, select:focus {
 
 .table-code {
     font-weight: 750;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .table-detail {
     display: flex;
     flex-direction: column;
     gap: 3px;
-    min-width: 130px;
+    min-width: 0;
 }
 
 .table-detail strong {
     color: var(--green);
-    font-size: 11px;
+    font-size: 10px;
+    overflow-wrap: anywhere;
 }
 
 .table-detail small {
     color: var(--text);
-    font-size: 12px;
+    font-size: 10px;
     overflow-wrap: anywhere;
 }
 
 .table-status {
     display: inline-block;
-    padding: 4px 8px;
+    max-width: 100%;
+    padding: 4px 7px;
     border-radius: 20px;
     background: var(--green-pale);
     color: var(--green);
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 /* LARGHEZZA TABELLE */
 
+.tabella-coppie,
+.tabella-nati {
+    width: 100%;
+    min-width: 0;
+}
+
 .tabella-coppie {
-    min-width: 620px;
+    table-layout: fixed;
 }
 
 .tabella-nati {
-    min-width: 1120px;
+    table-layout: fixed;
 }
 
-.tabella-nati th,
-.tabella-nati td {
-    white-space: nowrap;
-}
-
-.tabella-nati td:nth-child(3),
-.tabella-nati td:last-child {
-    white-space: normal;
-    min-width: 140px;
-    max-width: 220px;
-    overflow-wrap: anywhere;
-}
+.tabella-nati th:nth-child(1), .tabella-nati td:nth-child(1) { width: 8%; }
+.tabella-nati th:nth-child(2), .tabella-nati td:nth-child(2) { width: 9%; }
+.tabella-nati th:nth-child(3), .tabella-nati td:nth-child(3) { width: 8%; }
+.tabella-nati th:nth-child(4), .tabella-nati td:nth-child(4) { width: 10%; }
+.tabella-nati th:nth-child(5), .tabella-nati td:nth-child(5) { width: 9%; }
+.tabella-nati th:nth-child(6), .tabella-nati td:nth-child(6) { width: 9%; }
+.tabella-nati th:nth-child(7), .tabella-nati td:nth-child(7) { width: 9%; }
+.tabella-nati th:nth-child(8), .tabella-nati td:nth-child(8) { width: 9%; }
+.tabella-nati th:nth-child(9), .tabella-nati td:nth-child(9) { width: 7%; }
+.tabella-nati th:nth-child(10), .tabella-nati td:nth-child(10) { width: 7%; }
+.tabella-nati th:nth-child(11), .tabella-nati td:nth-child(11) { width: 15%; }
 
 /* RESPONSIVE */
 
@@ -746,15 +758,25 @@ input:focus, select:focus {
     .registro-nati-grid { grid-template-columns: 1fr; }
 
     .table-responsive {
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
         border-radius: 8px;
     }
 
+    .responsive-table {
+        width: 100%;
+        table-layout: fixed;
+        font-size: 9px;
+    }
+
     .responsive-table th {
-        padding: 11px 12px;
+        padding: 7px 4px;
+        font-size: 8px;
     }
 
     .responsive-table td {
-        padding: 10px 12px;
+        padding: 7px 4px;
     }
 }
 
@@ -787,24 +809,31 @@ input:focus, select:focus {
     .nato-card { padding: 14px; }
     .nato-details { grid-template-columns: 1fr; }
 
-    .tabella-coppie {
-        min-width: 560px;
-    }
-
+    .tabella-coppie,
     .tabella-nati {
-        min-width: 1050px;
+        width: 100%;
+        min-width: 0;
     }
 
     .responsive-table {
-        font-size: 11px;
+        width: 100%;
+        table-layout: fixed;
+        font-size: 7px;
     }
 
     .responsive-table th {
-        padding: 10px;
-        font-size: 10px;
+        padding: 5px 2px;
+        font-size: 7px;
+        line-height: 1.2;
     }
 
     .responsive-table td {
-        padding: 9px 10px;
+        padding: 5px 2px;
+        line-height: 1.2;
+    }
+
+    .table-status {
+        padding: 2px 3px;
+        font-size: 7px;
     }
 }

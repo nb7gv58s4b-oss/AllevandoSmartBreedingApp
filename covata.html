@@ -33,6 +33,10 @@ button.secondary{background:#64756a}
 .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .status{display:inline-block;background:#edf3ee;color:#285b3d;padding:5px 9px;border-radius:20px;font-size:12px;font-weight:bold}
 .small{font-size:13px}
+.tableWrap{width:100%;overflow-x:auto;margin:12px 0}
+.chickTable{width:100%;border-collapse:collapse;font-size:13px;min-width:650px}
+.chickTable th,.chickTable td{padding:10px 8px;text-align:left;border-bottom:1px solid #e5eae6}
+.chickTable th{background:#f1f6f2;color:#285b3d}
 @media(max-width:550px){
  .grid{grid-template-columns:1fr}
  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -182,9 +186,69 @@ button.secondary{background:#64756a}
 </div>
 
 <div class="panel">
+<h2>Registra un nuovo pullo</h2>
+<p class="muted">Registra i pulli uno alla volta. L'associazione all'uovo di provenienza è facoltativa. Dopo il salvataggio il modulo si svuota automaticamente.</p>
+
+<form id="chickForm">
+<div class="grid">
+<div>
+<label>Anello</label>
+<input id="newChickRing" type="text">
+</div>
+<div>
+<label>Sesso</label>
+<select id="newChickSex">
+<option value="">Da determinare</option>
+<option value="Maschio">Maschio</option>
+<option value="Femmina">Femmina</option>
+<option value="Non determinato">Non determinato</option>
+</select>
+</div>
+<div>
+<label>Mutazione</label>
+<input id="newChickMutation" type="text">
+</div>
+<div>
+<label>Data nascita</label>
+<input id="newChickBirth" type="date">
+</div>
+<div>
+<label>Data inanellamento</label>
+<input id="newChickRingDate" type="date">
+</div>
+<div>
+<label>Data svezzamento</label>
+<input id="newChickWeaning" type="date">
+</div>
+<div>
+<label>Uovo di provenienza (facoltativo)</label>
+<select id="newChickEgg">
+<option value="">Non specificato</option>
+</select>
+</div>
+<div>
+<label>Stato</label>
+<select id="newChickState">
+<option value="Vivo">Vivo</option>
+<option value="Deceduto">Deceduto</option>
+<option value="Da verificare">Da verificare</option>
+</select>
+</div>
+</div>
+
+<label>Note</label>
+<textarea id="newChickNotes" rows="3"></textarea>
+
+<button id="addChickButton" type="submit">Registra pullo</button>
+<p id="newChickMessage"></p>
+</form>
+</div>
+
+<div class="panel">
 <h2>Pulli registrati</h2>
-<p class="muted">Le schede dei pulli sono collegate all'uovo da cui sono nati.</p>
+<p class="muted">Riepilogo dei pulli registrati in questa covata. Puoi modificare le singole schede nella sezione sottostante.</p>
 <div id="chicks">Caricamento pulli...</div>
+<div id="chickEdits"></div>
 </div>
 
 </section>
@@ -359,98 +423,16 @@ function renderEggs(){
   actions.appendChild(save);
   card.appendChild(actions);
 
-  if(result.input.value==="Schiuso"){
-   const chick=pulli.find(p=>p.uovo_id===egg.id);
-
-   if(chick){
-    card.appendChild(makeElement(
-     "p","success small",
-     "Pullo già registrato per questo uovo."
-    ));
-   }else{
-    const chickButton=makeElement(
-     "button",
-     "secondary",
-     "Registra il pullo nato da questo uovo"
-    );
-    chickButton.type="button";
-    chickButton.addEventListener("click",()=>{
-     const target=$("chick-form-"+egg.id);
-     if(target)target.classList.toggle("hidden");
-    });
-    card.appendChild(chickButton);
-    card.appendChild(createChickForm(egg));
-   }
-  }
-
   area.appendChild(card);
  });
 }
 
-function createChickForm(egg){
+function renderChickCards(){
 
- const form=makeElement("form","formCard hidden");
- form.id="chick-form-"+egg.id;
-
- form.appendChild(makeElement(
-  "h3","","Registra il pullo dell'uovo n. "+egg.numero
- ));
-
- const grid=makeElement("div","grid");
-
- const ring=makeField("Anello","chick-ring-"+egg.id,"text","");
- const sex=makeField("Sesso","chick-sex-"+egg.id,"select","",[
-  {value:"",label:"Da determinare"},
-  {value:"Maschio",label:"Maschio"},
-  {value:"Femmina",label:"Femmina"},
-  {value:"Non determinato",label:"Non determinato"}
- ]);
- const mutation=makeField("Mutazione","chick-mutation-"+egg.id,"text","");
- const birth=makeField("Data nascita","chick-birth-"+egg.id,"date",
-  egg.data_deposizione||"");
- const ringDate=makeField("Data inanellamento","chick-ringdate-"+egg.id,"date","");
- const weaning=makeField("Data svezzamento","chick-weaning-"+egg.id,"date","");
-
- [ring,sex,mutation,birth,ringDate,weaning].forEach(field=>{
-  grid.appendChild(field.wrap);
- });
-
- form.appendChild(grid);
-
- const state=makeField("Stato","chick-state-"+egg.id,"select","Vivo",[
-  {value:"Vivo",label:"Vivo"},
-  {value:"Deceduto",label:"Deceduto"},
-  {value:"Da verificare",label:"Da verificare"}
- ]);
- form.appendChild(state.wrap);
-
- const notes=makeField("Note","chick-notes-"+egg.id,"textarea","");
- form.appendChild(notes.wrap);
-
- const button=makeElement("button","","Salva scheda pullo");
- button.type="submit";
- form.appendChild(button);
-
- const feedback=makeElement("p","muted","");
- form.appendChild(feedback);
-
- form.addEventListener("submit",async e=>{
-  e.preventDefault();
-  await addChick(egg,button,feedback);
- });
-
- return form;
-}
-
-function renderChicks(){
-
- const area=$("chicks");
+ const area=$("chickEdits");
  area.replaceChildren();
 
- if(!pulli.length){
-  area.appendChild(makeElement("p","muted","Nessun pullo registrato."));
-  return;
- }
+ if(!pulli.length)return;
 
  pulli.forEach(chick=>{
 
@@ -467,7 +449,7 @@ function renderChicks(){
   card.appendChild(makeElement(
    "p","muted small",
    egg
-    ?"Nato dall'uovo n. "+egg.numero
+    ?"Uovo di provenienza: n. "+egg.numero
     :"Uovo di provenienza non associato"
   ));
 
@@ -508,6 +490,91 @@ function renderChicks(){
   card.appendChild(save);
   area.appendChild(card);
  });
+}
+
+function renderChicks(){
+
+ const area=$("chicks");
+ area.replaceChildren();
+
+ const eggSelect=$("newChickEgg");
+ const selectedEgg=eggSelect.value;
+
+ eggSelect.replaceChildren();
+
+ const emptyOption=document.createElement("option");
+ emptyOption.value="";
+ emptyOption.textContent="Non specificato";
+ eggSelect.appendChild(emptyOption);
+
+ uova.forEach(egg=>{
+  const option=document.createElement("option");
+  option.value=egg.id;
+  option.textContent="Uovo n. "+egg.numero;
+  eggSelect.appendChild(option);
+ });
+
+ if(selectedEgg&&uova.some(u=>u.id===selectedEgg)){
+  eggSelect.value=selectedEgg;
+ }
+
+ if(!pulli.length){
+  area.appendChild(makeElement("p","muted","Nessun pullo registrato in questa covata."));
+  renderChickCards();
+  return;
+ }
+
+ const tableWrap=makeElement("div","tableWrap");
+ const table=makeElement("table","chickTable");
+ const thead=makeElement("thead");
+ const headerRow=makeElement("tr");
+
+ [
+  "Anello",
+  "Sesso",
+  "Mutazione",
+  "Nascita",
+  "Inanellamento",
+  "Svezzamento",
+  "Stato",
+  "Uovo"
+ ].forEach(label=>{
+  headerRow.appendChild(makeElement("th","",label));
+ });
+
+ thead.appendChild(headerRow);
+ table.appendChild(thead);
+
+ const tbody=makeElement("tbody");
+
+ pulli.forEach(chick=>{
+
+  const row=makeElement("tr");
+  const egg=uova.find(u=>u.id===chick.uovo_id);
+
+  const values=[
+   chick.anello||"—",
+   chick.sesso||"—",
+   chick.mutazione||"—",
+   chick.data_nascita||"—",
+   chick.data_inanellamento||"—",
+   chick.data_svezzamento||"—",
+   chick.stato||"—",
+   egg?"N. "+egg.numero:"Non specificato"
+  ];
+
+  values.forEach(value=>{
+   row.appendChild(makeElement("td","",value));
+  });
+
+  tbody.appendChild(row);
+ });
+
+ table.appendChild(tbody);
+ tableWrap.appendChild(table);
+ area.appendChild(tableWrap);
+
+ renderChickCards();
 }
 
 async function refreshData(){
@@ -691,46 +758,68 @@ $("eggForm").addEventListener("submit",async e=>{
  }
 });
 
-async function addChick(egg,button,feedback){
+async function addChick(){
 
+ const button=$("addChickButton");
  button.disabled=true;
- feedback.textContent="Registrazione in corso...";
+ message("newChickMessage","Registrazione in corso...");
 
  try{
 
-  if(pulli.some(p=>p.uovo_id===egg.id)){
-   throw new Error("Esiste già un pullo collegato a questo uovo.");
+  if(!covata){
+   throw new Error("La covata non è ancora caricata.");
+  }
+
+  const selectedEgg=$("newChickEgg").value;
+
+  if(selectedEgg&&!uova.some(u=>u.id===selectedEgg)){
+   throw new Error("L'uovo selezionato non appartiene a questa covata.");
   }
 
   const {error}=await client
    .from("pulli")
    .insert({
     covata_id:covata.id,
-    uovo_id:egg.id,
-    anello:$("chick-ring-"+egg.id).value||null,
-    sesso:$("chick-sex-"+egg.id).value||null,
-    mutazione:$("chick-mutation-"+egg.id).value||null,
-    data_nascita:$("chick-birth-"+egg.id).value||null,
-    data_inanellamento:$("chick-ringdate-"+egg.id).value||null,
-    data_svezzamento:$("chick-weaning-"+egg.id).value||null,
-    stato:$("chick-state-"+egg.id).value||"Vivo",
-    note:$("chick-notes-"+egg.id).value||null
+    uovo_id:selectedEgg||null,
+    anello:$("newChickRing").value.trim()||null,
+    sesso:$("newChickSex").value||null,
+    mutazione:$("newChickMutation").value.trim()||null,
+    data_nascita:$("newChickBirth").value||null,
+    data_inanellamento:$("newChickRingDate").value||null,
+    data_svezzamento:$("newChickWeaning").value||null,
+    stato:$("newChickState").value||"Vivo",
+    note:$("newChickNotes").value.trim()||null
    });
 
   if(error)throw error;
 
+  $("chickForm").reset();
+
   await refreshData();
 
-  message("globalMessage","Pullo registrato e collegato al suo uovo.","success");
+  message(
+   "newChickMessage",
+   "Pullo registrato correttamente. Puoi inserire il successivo.",
+   "success"
+  );
 
  }catch(error){
 
-  feedback.textContent="Errore: "+error.message;
+  message(
+   "newChickMessage",
+   "Errore durante la registrazione: "+error.message,
+   "error"
+  );
 
  }finally{
   button.disabled=false;
  }
 }
+
+$("chickForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ await addChick();
+});
 
 async function updateChick(id,button){
 

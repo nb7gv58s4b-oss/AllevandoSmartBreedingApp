@@ -17,7 +17,16 @@ const statUova = document.getElementById("stat-uova");
 const statPulli = document.getElementById("stat-pulli");
 const listaPromemoria = document.getElementById("lista-promemoria");
 
+// Registro generale
+const listaNati = document.getElementById("lista-nati");
+const numeroNati = document.getElementById("numero-nati");
+const messaggioRegistro = document.getElementById("registro-nati-message");
+const ricercaNati = document.getElementById("ricerca-nati");
+const filtroAnnoNati = document.getElementById("filtro-anno-nati");
+const filtroCoppiaNati = document.getElementById("filtro-coppia-nati");
+
 let coppieArchivio = [];
+let archivioNati = [];
 let annoSelezionato = new Date().getFullYear();
 
 // --------------------------------------------------
@@ -38,6 +47,7 @@ async function mostraUtente(user) {
     await caricaCoppie();
     await caricaAnniDashboard();
     await caricaDashboard();
+    await caricaRegistroNati();
 }
 
 loginForm.addEventListener("submit", async function(event) {
@@ -166,8 +176,8 @@ async function caricaCoppie() {
 
         soggetti.append(maschio, femmina);
 
-        // Nessun pulsante, link o accesso alla scheda digitale.
         // La dashboard mostra le coppie esclusivamente in lettura.
+        // L'accesso operativo avviene tramite Smart Card NFC.
 
         card.append(intestazione, soggetti);
 
@@ -331,6 +341,362 @@ async function caricaStatisticheStagione() {
     if (erroreUova) console.error("Errore conteggio uova:", erroreUova);
     if (errorePulli) console.error("Errore conteggio pulli:", errorePulli);
 }
+
+// --------------------------------------------------
+// REGISTRO GENERALE DEI NATI
+// --------------------------------------------------
+
+async function caricaRegistroNati() {
+    listaNati.replaceChildren();
+    messaggioRegistro.textContent = "Caricamento soggetti...";
+
+    archivioNati = [];
+
+    try {
+        // Caricamento di tutti i pulli dell'allevatore.
+        // La sicurezza dei dati è garantita dalle policy RLS.
+
+        let tuttiIPulli = [];
+        let offset = 0;
+        const dimensionePagina = 1000;
+
+        while (true) {
+            const { data, error } = await client
+                .from("pulli")
+                .select(`
+                    id,
+                    covata_id,
+                    uovo_id,
+                    anello,
+                    sesso,
+                    mutazione,
+                    data_nascita,
+                    data_inanellamento,
+                    data_svezzamento,
+                    stato,
+                    note
+                `)
+                .order("data_nascita", { ascending: false, nullsFirst: false })
+                .range(offset, offset + dimensionePagina - 1);
+
+            if (error) throw error;
+
+            const pagina = data || [];
+            tuttiIPulli = tuttiIPulli.concat(pagina);
+
+            if (pagina.length < dimensionePagina) break;
+
+            offset += dimensionePagina;
+        }
+
+        if (tuttiIPulli.length === 0) {
+            messaggioRegistro.textContent = "Non risultano ancora soggetti nati registrati.";
+            numeroNati.textContent = "0 soggetti";
+            popolaFiltriRegistro([]);
+            return;
+        }
+
+        // Recupera le covate di provenienza.
+
+        const idsCovate = [
+            ...new Set(tuttiIPulli.map(p => p.covata_id).filter(Boolean))
+        ];
+
+        const mappaCovate = new Map();
+
+        if (idsCovate.length > 0) {
+            const { data: covate, error: erroreCovate } = await client
+                .from("covate")
+                .select("id, numero, anno_id")
+                .in("id", idsCovate);
+
+            if (erroreCovate) throw erroreCovate;
+
+            (covate || []).forEach(covata => {
+                mappaCovate.set(covata.id, covata);
+            });
+        }
+
+        // Recupera le stagioni riproduttive.
+
+        const idsAnni = [
+            ...new Set(
+                [...mappaCovate.values()]
+                    .map(covata => covata.anno_id)
+                    .filter(Boolean)
+            )
+        ];
+
+        const mappaAnni = new Map();
+
+        if (idsAnni.length > 0) {
+            const { data: stagioni, error: erroreStagioni } = await client
+                .from("anni_riproduttivi")
+                .select("id, anno, coppia_id")
+                .in("id", idsAnni);
+
+            if (erroreStagioni) throw erroreStagioni;
+
+            (stagioni || []).forEach(stagione => {
+                mappaAnni.set(stagione.id, stagione);
+            });
+        }
+
+        // Recupera le coppie di provenienza.
+
+        const idsCoppie = [
+            ...new Set(
+                [...mappaAnni.values()]
+                    .map(stagione => stagione.coppia_id)
+                    .filter(Boolean)
+            )
+        ];
+
+        const mappaCoppie = new Map();
+
+        if (idsCoppie.length > 0) {
+            const { data: coppie, error: erroreCoppie } = await client
+                .from("coppie")
+                .select("id, codice")
+                .in("id", idsCoppie);
+
+            if (erroreCoppie) throw erroreCoppie;
+
+            (coppie || []).forEach(coppia => {
+                mappaCoppie.set(coppia.id, coppia);
+            });
+        }
+
+        // Costruisce l'archivio generale con i riferimenti.
+
+        archivioNati = tuttiIPulli.map(pullo => {
+            const covata = mappaCovate.get(pullo.covata_id) || null;
+            const stagione = covata
+                ? mappaAnni.get(covata.anno_id) || null
+                : null;
+            const coppia = stagione
+                ? mappaCoppie.get(stagione.coppia_id) || null
+                : null;
+
+            return {
+                ...pullo,
+                numero_covata: covata ? covata.numero : null,
+                anno: stagione ? stagione.anno : null,
+                coppia_codice: coppia ? coppia.codice : null,
+                coppia_id: coppia ? coppia.id : null
+            };
+        });
+
+        popolaFiltriRegistro(archivioNati);
+        applicaFiltriRegistro();
+
+    } catch (error) {
+        console.error("Errore registro generale dei nati:", error);
+
+        numeroNati.textContent = "!";
+        messaggioRegistro.textContent =
+            "Errore nel caricamento del registro: " + error.message;
+    }
+}
+
+// --------------------------------------------------
+// FILTRI REGISTRO GENERALE
+// --------------------------------------------------
+
+function popolaFiltriRegistro(elenco) {
+    const anni = [...new Set(
+        elenco.map(p => p.anno).filter(anno => anno !== null && anno !== undefined)
+    )].sort((a, b) => Number(b) - Number(a));
+
+    const coppie = [...new Map(
+        elenco
+            .filter(p => p.coppia_id)
+            .map(p => [
+                p.coppia_id,
+                {
+                    id: p.coppia_id,
+                    codice: p.coppia_codice
+                }
+            ])
+    ).values()].sort((a, b) =>
+        String(a.codice || "").localeCompare(String(b.codice || ""), "it")
+    );
+
+    const annoPrecedente = filtroAnnoNati.value;
+    const coppiaPrecedente = filtroCoppiaNati.value;
+
+    filtroAnnoNati.replaceChildren();
+
+    const tutteLeStagioni = creaElemento(
+        "option",
+        "",
+        "Tutte le stagioni"
+    );
+    tutteLeStagioni.value = "";
+    filtroAnnoNati.appendChild(tutteLeStagioni);
+
+    anni.forEach(anno => {
+        const opzione = creaElemento("option", "", String(anno));
+        opzione.value = String(anno);
+        filtroAnnoNati.appendChild(opzione);
+    });
+
+    filtroCoppiaNati.replaceChildren();
+
+    const tutteLeCoppie = creaElemento(
+        "option",
+        "",
+        "Tutte le coppie"
+    );
+    tutteLeCoppie.value = "";
+    filtroCoppiaNati.appendChild(tutteLeCoppie);
+
+    coppie.forEach(coppia => {
+        const opzione = creaElemento(
+            "option",
+            "",
+            coppia.codice || "Coppia"
+        );
+        opzione.value = coppia.id;
+        filtroCoppiaNati.appendChild(opzione);
+    });
+
+    if (anni.some(anno => String(anno) === annoPrecedente)) {
+        filtroAnnoNati.value = annoPrecedente;
+    }
+
+    if (coppie.some(coppia => coppia.id === coppiaPrecedente)) {
+        filtroCoppiaNati.value = coppiaPrecedente;
+    }
+}
+
+function applicaFiltriRegistro() {
+    const testo = ricercaNati.value.trim().toLowerCase();
+    const anno = filtroAnnoNati.value;
+    const coppia = filtroCoppiaNati.value;
+
+    const filtrati = archivioNati.filter(pullo => {
+        const corrispondeTesto = !testo || [
+            pullo.anello,
+            pullo.sesso,
+            pullo.mutazione,
+            pullo.stato,
+            pullo.coppia_codice,
+            pullo.numero_covata,
+            pullo.anno
+        ].some(valore =>
+            String(valore || "").toLowerCase().includes(testo)
+        );
+
+        const corrispondeAnno =
+            !anno || String(pullo.anno) === anno;
+
+        const corrispondeCoppia =
+            !coppia || pullo.coppia_id === coppia;
+
+        return corrispondeTesto && corrispondeAnno && corrispondeCoppia;
+    });
+
+    mostraNatiRegistro(filtrati);
+}
+
+function mostraNatiRegistro(elenco) {
+    listaNati.replaceChildren();
+
+    numeroNati.textContent =
+        elenco.length + (elenco.length === 1 ? " soggetto" : " soggetti");
+
+    messaggioRegistro.textContent =
+        elenco.length === 0
+            ? "Nessun soggetto corrisponde ai filtri selezionati."
+            : "Soggetti trovati: " + elenco.length;
+
+    if (elenco.length === 0) {
+        listaNati.appendChild(
+            creaElemento("p", "empty-state", "Nessun risultato da visualizzare.")
+        );
+        return;
+    }
+
+    elenco.forEach(pullo => {
+        const card = creaElemento("article", "nato-card");
+
+        const intestazione = creaElemento("div", "nato-card-header");
+
+        intestazione.append(
+            creaElemento(
+                "h3",
+                "",
+                pullo.anello ? "Anello " + pullo.anello : "Soggetto senza anello"
+            ),
+            creaElemento(
+                "span",
+                "status-label",
+                pullo.stato || "Registrato"
+            )
+        );
+
+        const dettagli = creaElemento("div", "nato-details");
+
+        campoSoggetto(dettagli, "Sesso", pullo.sesso);
+        campoSoggetto(dettagli, "Mutazione", pullo.mutazione);
+        campoSoggetto(
+            dettagli,
+            "Data di nascita",
+            formattaData(pullo.data_nascita)
+        );
+        campoSoggetto(
+            dettagli,
+            "Inanellamento",
+            formattaData(pullo.data_inanellamento)
+        );
+        campoSoggetto(
+            dettagli,
+            "Svezzamento",
+            formattaData(pullo.data_svezzamento)
+        );
+
+        const provenienza = creaElemento("div", "nato-provenienza");
+
+        provenienza.appendChild(
+            creaElemento("strong", "", "PROVENIENZA")
+        );
+
+        campoSoggetto(
+            provenienza,
+            "Coppia",
+            pullo.coppia_codice || "Non disponibile"
+        );
+
+        campoSoggetto(
+            provenienza,
+            "Stagione",
+            pullo.anno ? String(pullo.anno) : "Non disponibile"
+        );
+
+        campoSoggetto(
+            provenienza,
+            "Covata",
+            pullo.numero_covata !== null && pullo.numero_covata !== undefined
+                ? String(pullo.numero_covata)
+                : "Non disponibile"
+        );
+
+        card.append(intestazione, dettagli, provenienza);
+
+        if (pullo.note) {
+            const note = creaElemento("p", "nato-note");
+            note.textContent = "Note: " + pullo.note;
+            card.appendChild(note);
+        }
+
+        listaNati.appendChild(card);
+    });
+}
+
+ricercaNati.addEventListener("input", applicaFiltriRegistro);
+filtroAnnoNati.addEventListener("change", applicaFiltriRegistro);
+filtroCoppiaNati.addEventListener("change", applicaFiltriRegistro);
 
 // --------------------------------------------------
 // DASHBOARD: PROMEMORIA

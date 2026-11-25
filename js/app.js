@@ -1,4 +1,3 @@
-
 const client = window.supabaseClient;
 
 const loginForm = document.getElementById("login-form");
@@ -117,6 +116,70 @@ function formattaData(data) {
 }
 
 // --------------------------------------------------
+// CREAZIONE TABELLE RESPONSIVE
+// --------------------------------------------------
+
+function creaDettaglioTabella(titolo, valore) {
+    const elemento = document.createElement("div");
+    elemento.className = "table-detail";
+
+    elemento.append(
+        creaElemento("strong", "", titolo),
+        creaElemento("small", "", valore || "Non inserito")
+    );
+
+    return elemento;
+}
+
+function creaTabellaCompatta(intestazioni, righe, classe = "") {
+    const contenitore = creaElemento("div", "table-responsive");
+
+    const tabella = creaElemento(
+        "table",
+        "responsive-table " + classe
+    );
+
+    const thead = document.createElement("thead");
+    const rigaIntestazione = document.createElement("tr");
+
+    intestazioni.forEach(testo => {
+        const th = creaElemento("th", "", testo);
+        th.scope = "col";
+        rigaIntestazione.appendChild(th);
+    });
+
+    thead.appendChild(rigaIntestazione);
+
+    const tbody = document.createElement("tbody");
+
+    righe.forEach(valori => {
+        const tr = document.createElement("tr");
+
+        valori.forEach(valore => {
+            const td = document.createElement("td");
+
+            if (valore instanceof HTMLElement) {
+                td.appendChild(valore);
+            } else {
+                td.textContent =
+                    valore === null || valore === undefined || valore === ""
+                        ? "—"
+                        : String(valore);
+            }
+
+            tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+    });
+
+    tabella.append(thead, tbody);
+    contenitore.appendChild(tabella);
+
+    return contenitore;
+}
+
+// --------------------------------------------------
 // ARCHIVIO COPPIE - SOLA VISUALIZZAZIONE
 // --------------------------------------------------
 
@@ -150,39 +213,37 @@ async function caricaCoppie() {
         return;
     }
 
-    coppieArchivio.forEach(coppia => {
-        const card = creaElemento("article", "coppia-card");
+    const righe = coppieArchivio.map(coppia => [
+        creaElemento(
+            "strong",
+            "table-code",
+            coppia.codice || "Senza codice"
+        ),
 
-        const intestazione = creaElemento("div", "coppia-card-header");
+        creaDettaglioTabella(
+            "♂ Maschio",
+            [
+                coppia.maschio_anello,
+                coppia.maschio_mutazione
+            ].filter(Boolean).join(" · ")
+        ),
 
-        intestazione.append(
-            creaElemento("h3", "", coppia.codice),
-            creaElemento("span", "status-label", "Coppia registrata")
-        );
+        creaDettaglioTabella(
+            "♀ Femmina",
+            [
+                coppia.femmina_anello,
+                coppia.femmina_mutazione
+            ].filter(Boolean).join(" · ")
+        )
+    ]);
 
-        const soggetti = creaElemento("div", "birds-grid");
-
-        const maschio = creaElemento("div", "bird-card male-card");
-        maschio.appendChild(creaElemento("h4", "", "♂ Maschio"));
-
-        campoSoggetto(maschio, "Anello", coppia.maschio_anello);
-        campoSoggetto(maschio, "Mutazione", coppia.maschio_mutazione);
-
-        const femmina = creaElemento("div", "bird-card female-card");
-        femmina.appendChild(creaElemento("h4", "", "♀ Femmina"));
-
-        campoSoggetto(femmina, "Anello", coppia.femmina_anello);
-        campoSoggetto(femmina, "Mutazione", coppia.femmina_mutazione);
-
-        soggetti.append(maschio, femmina);
-
-        // La dashboard mostra le coppie esclusivamente in lettura.
-        // L'accesso operativo avviene tramite Smart Card NFC.
-
-        card.append(intestazione, soggetti);
-
-        listaCoppie.appendChild(card);
-    });
+    listaCoppie.appendChild(
+        creaTabellaCompatta(
+            ["Coppia", "Maschio", "Femmina"],
+            righe,
+            "tabella-coppie"
+        )
+    );
 }
 
 // --------------------------------------------------
@@ -353,9 +414,6 @@ async function caricaRegistroNati() {
     archivioNati = [];
 
     try {
-        // Caricamento di tutti i pulli dell'allevatore.
-        // La sicurezza dei dati è garantita dalle policy RLS.
-
         let tuttiIPulli = [];
         let offset = 0;
         const dimensionePagina = 1000;
@@ -390,13 +448,13 @@ async function caricaRegistroNati() {
         }
 
         if (tuttiIPulli.length === 0) {
-            messaggioRegistro.textContent = "Non risultano ancora soggetti nati registrati.";
+            messaggioRegistro.textContent =
+                "Non risultano ancora soggetti nati registrati.";
+
             numeroNati.textContent = "0 soggetti";
             popolaFiltriRegistro([]);
             return;
         }
-
-        // Recupera le covate di provenienza.
 
         const idsCovate = [
             ...new Set(tuttiIPulli.map(p => p.covata_id).filter(Boolean))
@@ -416,8 +474,6 @@ async function caricaRegistroNati() {
                 mappaCovate.set(covata.id, covata);
             });
         }
-
-        // Recupera le stagioni riproduttive.
 
         const idsAnni = [
             ...new Set(
@@ -442,8 +498,6 @@ async function caricaRegistroNati() {
             });
         }
 
-        // Recupera le coppie di provenienza.
-
         const idsCoppie = [
             ...new Set(
                 [...mappaAnni.values()]
@@ -466,8 +520,6 @@ async function caricaRegistroNati() {
                 mappaCoppie.set(coppia.id, coppia);
             });
         }
-
-        // Costruisce l'archivio generale con i riferimenti.
 
         archivioNati = tuttiIPulli.map(pullo => {
             const covata = mappaCovate.get(pullo.covata_id) || null;
@@ -505,7 +557,9 @@ async function caricaRegistroNati() {
 
 function popolaFiltriRegistro(elenco) {
     const anni = [...new Set(
-        elenco.map(p => p.anno).filter(anno => anno !== null && anno !== undefined)
+        elenco.map(p => p.anno).filter(anno =>
+            anno !== null && anno !== undefined
+        )
     )].sort((a, b) => Number(b) - Number(a));
 
     const coppie = [...new Map(
@@ -532,6 +586,7 @@ function popolaFiltriRegistro(elenco) {
         "",
         "Tutte le stagioni"
     );
+
     tutteLeStagioni.value = "";
     filtroAnnoNati.appendChild(tutteLeStagioni);
 
@@ -548,6 +603,7 @@ function popolaFiltriRegistro(elenco) {
         "",
         "Tutte le coppie"
     );
+
     tutteLeCoppie.value = "";
     filtroCoppiaNati.appendChild(tutteLeCoppie);
 
@@ -557,6 +613,7 @@ function popolaFiltriRegistro(elenco) {
             "",
             coppia.codice || "Coppia"
         );
+
         opzione.value = coppia.id;
         filtroCoppiaNati.appendChild(opzione);
     });
@@ -583,7 +640,8 @@ function applicaFiltriRegistro() {
             pullo.stato,
             pullo.coppia_codice,
             pullo.numero_covata,
-            pullo.anno
+            pullo.anno,
+            pullo.note
         ].some(valore =>
             String(valore || "").toLowerCase().includes(testo)
         );
@@ -599,6 +657,10 @@ function applicaFiltriRegistro() {
 
     mostraNatiRegistro(filtrati);
 }
+
+// --------------------------------------------------
+// VISUALIZZAZIONE REGISTRO IN TABELLA
+// --------------------------------------------------
 
 function mostraNatiRegistro(elenco) {
     listaNati.replaceChildren();
@@ -618,80 +680,49 @@ function mostraNatiRegistro(elenco) {
         return;
     }
 
-    elenco.forEach(pullo => {
-        const card = creaElemento("article", "nato-card");
+    const righe = elenco.map(pullo => [
+        creaElemento(
+            "strong",
+            "table-code",
+            pullo.anello || "Senza anello"
+        ),
+        pullo.sesso || "—",
+        pullo.mutazione || "—",
+        formattaData(pullo.data_nascita) || "—",
+        formattaData(pullo.data_inanellamento) || "—",
+        formattaData(pullo.data_svezzamento) || "—",
+        creaElemento(
+            "span",
+            "table-status",
+            pullo.stato || "Registrato"
+        ),
+        pullo.coppia_codice || "—",
+        pullo.anno ? String(pullo.anno) : "—",
+        pullo.numero_covata !== null && pullo.numero_covata !== undefined
+            ? String(pullo.numero_covata)
+            : "—",
+        pullo.note || "—"
+    ]);
 
-        const intestazione = creaElemento("div", "nato-card-header");
-
-        intestazione.append(
-            creaElemento(
-                "h3",
-                "",
-                pullo.anello ? "Anello " + pullo.anello : "Soggetto senza anello"
-            ),
-            creaElemento(
-                "span",
-                "status-label",
-                pullo.stato || "Registrato"
-            )
-        );
-
-        const dettagli = creaElemento("div", "nato-details");
-
-        campoSoggetto(dettagli, "Sesso", pullo.sesso);
-        campoSoggetto(dettagli, "Mutazione", pullo.mutazione);
-        campoSoggetto(
-            dettagli,
-            "Data di nascita",
-            formattaData(pullo.data_nascita)
-        );
-        campoSoggetto(
-            dettagli,
-            "Inanellamento",
-            formattaData(pullo.data_inanellamento)
-        );
-        campoSoggetto(
-            dettagli,
-            "Svezzamento",
-            formattaData(pullo.data_svezzamento)
-        );
-
-        const provenienza = creaElemento("div", "nato-provenienza");
-
-        provenienza.appendChild(
-            creaElemento("strong", "", "PROVENIENZA")
-        );
-
-        campoSoggetto(
-            provenienza,
-            "Coppia",
-            pullo.coppia_codice || "Non disponibile"
-        );
-
-        campoSoggetto(
-            provenienza,
-            "Stagione",
-            pullo.anno ? String(pullo.anno) : "Non disponibile"
-        );
-
-        campoSoggetto(
-            provenienza,
-            "Covata",
-            pullo.numero_covata !== null && pullo.numero_covata !== undefined
-                ? String(pullo.numero_covata)
-                : "Non disponibile"
-        );
-
-        card.append(intestazione, dettagli, provenienza);
-
-        if (pullo.note) {
-            const note = creaElemento("p", "nato-note");
-            note.textContent = "Note: " + pullo.note;
-            card.appendChild(note);
-        }
-
-        listaNati.appendChild(card);
-    });
+    listaNati.appendChild(
+        creaTabellaCompatta(
+            [
+                "Anello",
+                "Sesso",
+                "Mutazione",
+                "Nascita",
+                "Inanellamento",
+                "Svezzamento",
+                "Stato",
+                "Coppia",
+                "Stagione",
+                "Covata",
+                "Note"
+            ],
+            righe,
+            "tabella-nati"
+        )
+    );
 }
 
 ricercaNati.addEventListener("input", applicaFiltriRegistro);

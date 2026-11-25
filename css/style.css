@@ -1,577 +1,45 @@
 
-:root {
-    --green: #174b38;
-    --green-light: #28664d;
-    --green-pale: #edf4ef;
-    --cream: #f7f6f0;
-    --white: #ffffff;
-    --text: #26372e;
-    --muted: #7b877f;
-    --border: #e6e9e2;
-    --red: #a7473d;
-    --orange: #c17a32;
-    --shadow: 0 8px 28px rgba(23, 75, 56, 0.07);
-}
+/* --------------------------------------------------
+   REGISTRO GENERALE DEI NATI
+-------------------------------------------------- */
 
-* {
-    box-sizing: border-box;
-}
-
-body {
-    margin: 0;
-    background: var(--cream);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    line-height: 1.5;
-}
-
-[hidden] {
-    display: none !important;
-}
-
-button,
-input,
-select {
-    font: inherit;
-}
-
-button {
-    cursor: pointer;
-}
-
-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-h1,
-h2,
-h3,
-h4,
-p {
-    margin-top: 0;
-}
-
-h1,
-h2,
-h3,
-h4 {
-    color: var(--green);
-}
-
-#login-area {
-    min-height: 100vh;
-    padding: 50px 20px;
-}
-
-#login-area header {
-    text-align: center;
-    margin: 30px auto 45px;
-}
-
-#login-area header h1 {
-    font-size: 30px;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-}
-
-#login-area header h1 span,
-.app-header h1 span {
-    display: block;
-    font-size: 15px;
-    font-weight: 500;
-    letter-spacing: 2px;
-    margin-top: 5px;
-}
-
-#login-area header p {
-    color: var(--muted);
-}
-
-.welcome {
-    width: 100%;
-    max-width: 420px;
-    margin: 0 auto;
-    padding: 32px;
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    box-shadow: var(--shadow);
-}
-
-.welcome h2 {
-    margin-bottom: 25px;
-    text-align: center;
-}
-
-#login-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-label {
-    display: block;
-    margin-bottom: 6px;
-    color: var(--text);
-    font-size: 13px;
-    font-weight: 650;
-}
-
-input,
-select {
-    width: 100%;
-    min-height: 46px;
-    padding: 11px 13px;
-    border: 1px solid var(--border);
-    border-radius: 9px;
-    background: var(--white);
-    color: var(--text);
-    outline: none;
-}
-
-input:focus,
-select:focus {
-    border-color: var(--green-light);
-    box-shadow: 0 0 0 3px rgba(40, 102, 77, 0.1);
-}
-
-#login-form button,
-.form-actions button,
-#crea-stagione {
-    min-height: 46px;
-    padding: 11px 20px;
-    border: 0;
-    border-radius: 9px;
-    background: var(--green);
-    color: var(--white);
-    font-weight: 650;
-}
-
-#login-form button {
-    margin-top: 12px;
-}
-
-#login-form button:hover,
-.form-actions button:hover,
-#crea-stagione:hover {
-    background: var(--green-light);
-}
-
-#auth-message,
-#coppia-message,
-#stagione-message {
-    margin: 14px 0 0;
-    color: var(--red);
-    font-size: 13px;
-}
-
-/* HEADER */
-
-.app-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    padding: 20px max(5%, calc((100% - 1180px) / 2));
-    background: var(--green);
-    color: var(--white);
-}
-
-.app-header h1 {
-    margin: 0;
-    color: var(--white);
-    font-size: 22px;
-    letter-spacing: 1px;
-}
-
-.app-header h1 span {
-    color: rgba(255, 255, 255, 0.78);
-}
-
-.app-header p {
-    margin: 7px 0 0;
-    color: rgba(255, 255, 255, 0.72);
-    font-size: 12px;
-}
-
-#logout-button {
-    padding: 9px 17px;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    border-radius: 8px;
-    background: transparent;
-    color: var(--white);
-    font-size: 13px;
-    font-weight: 600;
-}
-
-#logout-button:hover {
-    background: rgba(255, 255, 255, 0.12);
-}
-
-/* DASHBOARD */
-
-.dashboard {
-    width: min(1180px, 92%);
-    margin: 0 auto;
-    padding: 36px 0 60px;
-}
-
-.dashboard-heading {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 20px;
-    margin-bottom: 26px;
-}
-
-.dashboard-heading h2 {
-    margin-bottom: 7px;
-    font-size: 29px;
-    font-weight: 700;
-}
-
-.dashboard-heading p {
-    margin-bottom: 0;
-    color: var(--muted);
-    font-size: 14px;
-}
-
-#user-email {
-    text-align: right;
-    font-size: 12px !important;
-}
-
-.eyebrow {
-    margin-bottom: 7px !important;
-    color: var(--green-light) !important;
-    font-size: 10px !important;
-    font-weight: 750;
-    letter-spacing: 1.5px;
-}
-
-/* SELETTORE ANNO */
-
-.year-selector {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    width: fit-content;
-    max-width: 100%;
-    margin: 0 0 22px;
-    padding: 12px 16px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: var(--white);
-    box-shadow: var(--shadow);
-}
-
-.year-selector label {
-    margin: 0;
-    white-space: nowrap;
-}
-
-.year-selector select {
-    width: auto;
-    min-width: 110px;
-    min-height: 38px;
-    padding: 7px 30px 7px 10px;
-    font-weight: 650;
-}
-
-/* CONTATORI */
-
-.stats {
+.registro-filters {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
-    margin: 22px 0 34px;
-}
-
-.stats-dashboard {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.stat-card {
-    display: flex;
-    flex-direction: column;
-    min-height: 145px;
-    padding: 23px;
-    border: 1px solid var(--border);
-    border-radius: 15px;
-    background: var(--white);
-    box-shadow: var(--shadow);
-}
-
-.stat-card span {
-    color: var(--muted);
-    font-size: 10px;
-    font-weight: 750;
-    letter-spacing: 1px;
-}
-
-.stat-card strong {
-    margin: 12px 0 5px;
-    color: var(--green);
-    font-size: 38px;
-    line-height: 1.1;
-    font-weight: 750;
-}
-
-.stat-card small {
-    color: var(--muted);
-    font-size: 12px;
-}
-
-/* PROMEMORIA */
-
-.reminders-section {
-    margin-top: 35px;
-    padding: 25px;
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    background: var(--white);
-    box-shadow: var(--shadow);
-}
-
-.reminders-heading {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.reminders-heading h2 {
-    margin-bottom: 5px;
-    font-size: 22px;
-}
-
-.reminders-heading p {
-    margin-bottom: 0;
-    color: var(--muted);
-    font-size: 13px;
-}
-
-.reminders-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.reminder-card {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 15px;
-    padding: 15px 17px;
-    border: 1px solid var(--border);
-    border-left: 4px solid var(--green-light);
-    border-radius: 10px;
-    background: #fbfcfa;
-}
-
-.reminder-content {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-}
-
-.reminder-content strong {
-    color: var(--text);
-    font-size: 14px;
-}
-
-.reminder-content small {
-    color: var(--muted);
-    font-size: 11px;
-}
-
-.reminder-date {
-    color: var(--green);
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-}
-
-.reminder-overdue {
-    border-left-color: var(--red);
-}
-
-.reminder-overdue .reminder-date {
-    color: var(--red);
-}
-
-.reminder-today {
-    border-left-color: var(--orange);
-}
-
-.reminder-today .reminder-date {
-    color: var(--orange);
-}
-
-.empty-state {
-    padding: 20px;
-    color: var(--muted);
-    text-align: center;
-    font-size: 13px;
-}
-
-/* SEZIONI OPERATIVE CONSERVATE */
-
-.section-block {
-    margin-top: 30px;
-    padding: 25px;
-    border: 1px solid var(--border);
-    border-radius: 15px;
-    background: var(--white);
-    box-shadow: var(--shadow);
-}
-
-.section-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 22px;
-}
-
-.section-title h2 {
-    margin-bottom: 5px;
-}
-
-.section-title p {
-    margin-bottom: 0;
-    color: var(--muted);
-    font-size: 13px;
-}
-
-.counter {
-    padding: 7px 12px;
-    border-radius: 20px;
-    background: var(--green-pale);
-    color: var(--green);
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-}
-
-.quick-panel {
-    padding: 22px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: #fbfcfa;
-}
-
-.form-heading {
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 14px;
     margin-bottom: 18px;
-}
-
-.form-heading h3 {
-    margin-bottom: 5px;
-}
-
-.form-heading p {
-    margin-bottom: 0;
-    color: var(--muted);
-    font-size: 13px;
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
-}
-
-.form-field {
-    min-width: 0;
-}
-
-.full-width {
-    grid-column: 1 / -1;
-}
-
-.subject-panel {
     padding: 18px;
     border: 1px solid var(--border);
     border-radius: 12px;
-    background: var(--white);
+    background: #fbfcfa;
 }
 
-.subject-panel label {
-    margin-top: 13px;
+.registro-filters > div {
+    min-width: 0;
 }
 
-.subject-heading {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.registro-filters label {
+    margin-bottom: 7px;
 }
 
-.subject-heading h3 {
-    margin-bottom: 2px;
+.registro-filters input,
+.registro-filters select {
+    min-height: 44px;
 }
 
-.subject-heading p {
-    margin-bottom: 0;
+.registro-message {
+    margin: 0 0 15px;
     color: var(--muted);
     font-size: 12px;
 }
 
-.subject-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--green-pale);
-    color: var(--green);
-    font-size: 20px;
-}
-
-.female-panel .subject-icon {
-    background: #f8eeee;
-    color: #a74765;
-}
-
-.form-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.secondary-button {
-    border: 1px solid var(--border) !important;
-    background: var(--white) !important;
-    color: var(--text) !important;
-}
-
-.secondary-button:hover {
-    background: var(--cream) !important;
-}
-
-.list-heading {
-    margin: 28px 0 15px;
-}
-
-.list-heading h3 {
-    margin-bottom: 4px;
-}
-
-.list-heading p {
-    margin-bottom: 0;
-    color: var(--muted);
-    font-size: 13px;
-}
-
-.coppie-grid {
+.registro-nati-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 15px;
+    gap: 14px;
 }
 
-.coppia-card {
+.nato-card {
     min-width: 0;
     padding: 18px;
     border: 1px solid var(--border);
@@ -579,245 +47,67 @@ select:focus {
     background: var(--white);
 }
 
-.coppia-card-header {
+.nato-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 10px;
-    margin-bottom: 15px;
+    margin-bottom: 14px;
 }
 
-.coppia-card-header h3 {
+.nato-card-header h3 {
     margin: 0;
     overflow-wrap: anywhere;
 }
 
-.status-label {
-    display: inline-block;
-    padding: 5px 9px;
-    border-radius: 20px;
-    background: var(--green-pale);
+.nato-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 14px;
+}
+
+.nato-provenienza {
+    margin-top: 15px;
+    padding: 13px;
+    border-radius: 9px;
+    background: #f5f8f4;
+}
+
+.nato-provenienza > strong {
+    display: block;
+    margin-bottom: 7px;
     color: var(--green);
     font-size: 10px;
-    font-weight: 700;
-    white-space: nowrap;
+    letter-spacing: 1px;
 }
 
-.birds-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-}
-
-.bird-card {
-    padding: 12px;
-    border-radius: 9px;
-    background: #f8faf7;
-}
-
-.bird-card h4 {
-    margin-bottom: 12px;
-    font-size: 13px;
-}
-
-.bird-detail {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 7px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 12px;
-}
-
-.bird-detail:last-child {
-    border-bottom: 0;
-}
-
-.bird-detail span {
+.nato-note {
+    margin: 13px 0 0;
+    padding-top: 11px;
+    border-top: 1px solid var(--border);
     color: var(--muted);
-}
-
-.bird-detail strong {
-    text-align: right;
+    font-size: 12px;
     overflow-wrap: anywhere;
 }
-
-.card-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 15px;
-}
-
-.card-actions button {
-    flex: 1;
-    padding: 9px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--white);
-    font-size: 12px;
-    font-weight: 650;
-}
-
-.edit-button {
-    color: var(--green);
-}
-
-.edit-button:hover {
-    background: var(--green-pale);
-}
-
-.delete-button {
-    color: var(--red);
-}
-
-.delete-button:hover {
-    background: #fbefed;
-}
-
-.season-clutches {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-    margin-top: 12px;
-}
-
-/* RESPONSIVE */
 
 @media (max-width: 760px) {
-    .app-header {
-        padding: 17px 4%;
+    .registro-filters {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 14px;
     }
 
-    .app-header h1 {
-        font-size: 18px;
-    }
-
-    .app-header h1 span {
-        font-size: 12px;
-    }
-
-    .dashboard {
-        width: 92%;
-        padding-top: 27px;
-    }
-
-    .dashboard-heading {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .dashboard-heading h2 {
-        font-size: 25px;
-    }
-
-    #user-email {
-        text-align: left;
-    }
-
-    .stats,
-    .stats-dashboard {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .stats-dashboard .stat-card:last-child {
-        grid-column: 1 / -1;
-    }
-
-    .stat-card {
-        min-height: 130px;
-        padding: 17px;
-    }
-
-    .stat-card strong {
-        font-size: 32px;
-    }
-
-    .reminders-section {
-        padding: 18px;
-    }
-
-    .section-block {
-        padding: 18px;
-    }
-
-    .coppie-grid {
+    .registro-nati-grid {
         grid-template-columns: 1fr;
     }
 }
 
 @media (max-width: 480px) {
-    #login-area {
-        padding: 30px 15px;
-    }
-
-    .welcome {
-        padding: 23px 18px;
-    }
-
-    .app-header {
-        align-items: center;
-    }
-
-    .app-header p {
-        font-size: 10px;
-    }
-
-    #logout-button {
-        padding: 8px 12px;
-        font-size: 12px;
-    }
-
-    .year-selector {
-        width: 100%;
-        justify-content: space-between;
-        gap: 8px;
-    }
-
-    .year-selector label {
-        font-size: 12px;
-    }
-
-    .year-selector select {
-        min-width: 90px;
-    }
-
-    .stat-card {
+    .nato-card {
         padding: 14px;
     }
 
-    .stat-card span {
-        font-size: 9px;
-    }
-
-    .stat-card strong {
-        font-size: 29px;
-    }
-
-    .stat-card small {
-        font-size: 10px;
-    }
-
-    .reminder-card {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .form-grid {
+    .nato-details {
         grid-template-columns: 1fr;
-    }
-
-    .full-width {
-        grid-column: auto;
-    }
-
-    .birds-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .section-title {
-        align-items: flex-start;
-        flex-direction: column;
     }
 }

@@ -38,6 +38,7 @@ button:disabled{opacity:.5}
 .edit-box{background:#f5f8f5;padding:14px;border-radius:10px;min-width:260px}
 .edit-box input,.edit-box textarea{margin-bottom:8px}
 .locked-note{font-size:12px;color:#68776d}
+.setup-intro{background:#f5f8f5;border-radius:10px;padding:14px;margin:12px 0}
 @media(max-width:550px){
 .grid{grid-template-columns:1fr}
 .page{padding:10px}
@@ -63,6 +64,36 @@ button:disabled{opacity:.5}
 <button type="submit">Accedi</button>
 </form>
 <p id="loginMessage" class="error"></p>
+</section>
+<!-- PRIMA CONFIGURAZIONE DELLA COPPIA -->
+<section id="firstSetup" class="panel hidden">
+<h2>Configura la tua prima coppia</h2>
+<p class="muted">
+Questa Smart Card non è ancora associata a una coppia.
+Inserisci i dati dei due riproduttori per creare la scheda digitale.
+</p>
+<div class="setup-intro">
+<strong>Attenzione:</strong>
+<p class="muted">
+Se un soggetto è già presente nel tuo archivio, verrà riconosciuto e riutilizzato automaticamente.
+Non verrà creato un duplicato. Il sistema verificherà anche il sesso e lo stato del soggetto.
+</p>
+</div>
+<form id="firstSetupForm">
+<h3>Maschio</h3>
+<label>Numero anello maschio</label>
+<input id="setupMaschioAnello" type="text" required autocomplete="off" placeholder="Inserisci il numero dell'anello">
+<label>Mutazione maschio (facoltativa)</label>
+<input id="setupMaschioMutazione" type="text" autocomplete="off" placeholder="Inserisci la mutazione, se conosciuta">
+<hr>
+<h3>Femmina</h3>
+<label>Numero anello femmina</label>
+<input id="setupFemminaAnello" type="text" required autocomplete="off" placeholder="Inserisci il numero dell'anello">
+<label>Mutazione femmina (facoltativa)</label>
+<input id="setupFemminaMutazione" type="text" autocomplete="off" placeholder="Inserisci la mutazione, se conosciuta">
+<button id="setupButton" type="submit">Crea la coppia e apri la scheda</button>
+<p id="setupMessage"></p>
+</form>
 </section>
 <section id="main" class="hidden">
 <div class="panel">
@@ -200,6 +231,48 @@ if(!v)return "Non indicata";
 const p=v.split("-");
 return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:v;
 }
+// --------------------------------------------------
+// PRIMA CONFIGURAZIONE NFC
+// --------------------------------------------------
+$("firstSetupForm").addEventListener("submit",async e=>{
+e.preventDefault();
+const maschioAnello=$("setupMaschioAnello").value.trim();
+const maschioMutazione=$("setupMaschioMutazione").value.trim();
+const femminaAnello=$("setupFemminaAnello").value.trim();
+const femminaMutazione=$("setupFemminaMutazione").value.trim();
+if(!maschioAnello||!femminaAnello){
+message("setupMessage","Inserisci entrambi i numeri di anello.","error");
+return;
+}
+if(maschioAnello.toLowerCase()===femminaAnello.toLowerCase()){
+message("setupMessage","Maschio e femmina non possono avere lo stesso numero di anello.","error");
+return;
+}
+const button=$("setupButton");
+button.disabled=true;
+button.textContent="Configurazione in corso...";
+message("setupMessage","Verifica dei riproduttori e creazione della coppia...");
+const {data,error}=await client.rpc("configura_coppia_da_tag",{
+p_codice:codiceTag,
+p_maschio_anello:maschioAnello,
+p_maschio_mutazione:maschioMutazione,
+p_femmina_anello:femminaAnello,
+p_femmina_mutazione:femminaMutazione
+});
+button.disabled=false;
+button.textContent="Crea la coppia e apri la scheda";
+if(error){
+message("setupMessage","Impossibile configurare la coppia: "+error.message,"error");
+return;
+}
+if(!data||data.successo!==true){
+message("setupMessage",data?.errore||"La configurazione non è stata completata.","error");
+return;
+}
+message("setupMessage","Coppia creata correttamente. Apertura della scheda...","success");
+$("firstSetupForm").reset();
+await loadSheet();
+});
 // --------------------------------------------------
 // ARCHIVIO RIPRODUTTORI
 // --------------------------------------------------
@@ -347,7 +420,6 @@ box.appendChild(campo);
 return campo;
 }
 // L'anello e il sesso non sono modificabili dopo la registrazione.
-// Questo protegge i collegamenti con le stagioni storiche.
 const anello=creaCampo("Anello",soggetto.anello);
 anello.disabled=true;
 const sesso=creaCampo("Sesso",soggetto.sesso,"select");
@@ -577,20 +649,37 @@ renderCovate();
 // --------------------------------------------------
 async function loadSheet(){
 hide("loading");
-show("main");
+hide("main");
+hide("firstSetup");
+hide("login");
+show("loading");
+message("globalMessage","");
 const {data,error}=await client.rpc("apri_coppia_da_tag",{
 p_codice:codiceTag
 });
+hide("loading");
 if(error){
 hide("main");
+hide("firstSetup");
 message("globalMessage",error.message,"error");
+return;
+}
+// La card esiste ed è assegnata all'allevatore,
+// ma non è ancora associata a una coppia.
+if(data&&data.successo===true&&data.stato==="da_configurare"){
+hide("main");
+show("firstSetup");
+message("globalMessage","");
 return;
 }
 if(!data||!data.successo||!data.coppia){
 hide("main");
+hide("firstSetup");
 message("globalMessage",data?.errore||"Scheda non trovata o non autorizzata.","error");
 return;
 }
+hide("firstSetup");
+show("main");
 coppia=data.coppia;
 stagioni=data.stagioni||[];
 $("pairTitle").textContent="Coppia "+(coppia.codice||"");

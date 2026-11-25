@@ -37,6 +37,7 @@ button.secondary{background:#64756a}
 .chickTable{width:100%;border-collapse:collapse;font-size:13px;min-width:650px}
 .chickTable th,.chickTable td{padding:10px 8px;text-align:left;border-bottom:1px solid #e5eae6}
 .chickTable th{background:#f1f6f2;color:#285b3d}
+#toggleChickEdits{margin-top:12px}
 @media(max-width:550px){
  .grid{grid-template-columns:1fr}
  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -246,9 +247,14 @@ button.secondary{background:#64756a}
 
 <div class="panel">
 <h2>Pulli registrati</h2>
-<p class="muted">Riepilogo dei pulli registrati in questa covata. Puoi modificare le singole schede nella sezione sottostante.</p>
+<p class="muted">Riepilogo dei pulli registrati in questa covata.</p>
 <div id="chicks">Caricamento pulli...</div>
-<div id="chickEdits"></div>
+
+<button type="button" id="toggleChickEdits" class="secondary" hidden>
+Modifica pulli
+</button>
+
+<div id="chickEdits" hidden></div>
 </div>
 
 </section>
@@ -496,6 +502,16 @@ function renderChicks(){
 
  const area=$("chicks");
  area.replaceChildren();
+
+ const editButton=$("toggleChickEdits");
+ const edits=$("chickEdits");
+
+ editButton.hidden=pulli.length===0;
+
+ if(pulli.length===0){
+  edits.hidden=true;
+  editButton.textContent="Modifica pulli";
+ }
 
  const eggSelect=$("newChickEgg");
  const selectedEgg=eggSelect.value;
@@ -821,6 +837,17 @@ $("chickForm").addEventListener("submit",async e=>{
  await addChick();
 });
 
+$("toggleChickEdits").addEventListener("click",()=>{
+ const edits=$("chickEdits");
+ const button=$("toggleChickEdits");
+
+ edits.hidden=!edits.hidden;
+
+ button.textContent=edits.hidden
+  ?"Modifica pulli"
+  :"Nascondi modifiche";
+});
+
 async function updateChick(id,button){
 
  button.disabled=true;
@@ -980,3 +1007,4 @@ await checkSession();
 
 </body>
 </html>
+

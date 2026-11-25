@@ -1,3 +1,4 @@
+
 const client = window.supabaseClient;
 
 const loginForm = document.getElementById("login-form");
@@ -95,55 +96,42 @@ function creaElemento(tag, classe, testo) {
     return elemento;
 }
 
-function campoSoggetto(contenitore, etichetta, valore) {
-    const riga = creaElemento("div", "bird-detail");
+function creaCella(riga, testo, classe = "") {
+    const cella = document.createElement("td");
 
-    riga.append(
-        creaElemento("span", "", etichetta),
-        creaElemento("strong", "", valore || "Non inserito")
-    );
+    if (classe) cella.className = classe;
 
-    contenitore.appendChild(riga);
+    cella.textContent =
+        testo !== null && testo !== undefined && testo !== ""
+            ? String(testo)
+            : "—";
+
+    riga.appendChild(cella);
+
+    return cella;
 }
 
 function formattaData(data) {
     if (!data) return "";
 
     const parti = data.split("-");
+
     if (parti.length !== 3) return data;
 
     return parti[2] + "/" + parti[1] + "/" + parti[0];
 }
 
-// --------------------------------------------------
-// CREAZIONE TABELLE RESPONSIVE
-// --------------------------------------------------
-
-function creaDettaglioTabella(titolo, valore) {
-    const elemento = document.createElement("div");
-    elemento.className = "table-detail";
-
-    elemento.append(
-        creaElemento("strong", "", titolo),
-        creaElemento("small", "", valore || "Non inserito")
-    );
-
-    return elemento;
-}
-
-function creaTabellaCompatta(intestazioni, righe, classe = "") {
+function creaTabella(classe, intestazioni) {
     const contenitore = creaElemento("div", "table-responsive");
 
-    const tabella = creaElemento(
-        "table",
-        "responsive-table " + classe
-    );
+    const tabella = creaElemento("table", "responsive-table " + classe);
 
     const thead = document.createElement("thead");
     const rigaIntestazione = document.createElement("tr");
 
-    intestazioni.forEach(testo => {
-        const th = creaElemento("th", "", testo);
+    intestazioni.forEach(titolo => {
+        const th = document.createElement("th");
+        th.textContent = titolo;
         th.scope = "col";
         rigaIntestazione.appendChild(th);
     });
@@ -152,35 +140,18 @@ function creaTabellaCompatta(intestazioni, righe, classe = "") {
 
     const tbody = document.createElement("tbody");
 
-    righe.forEach(valori => {
-        const tr = document.createElement("tr");
-
-        valori.forEach(valore => {
-            const td = document.createElement("td");
-
-            if (valore instanceof HTMLElement) {
-                td.appendChild(valore);
-            } else {
-                td.textContent =
-                    valore === null || valore === undefined || valore === ""
-                        ? "—"
-                        : String(valore);
-            }
-
-            tr.appendChild(td);
-        });
-
-        tbody.appendChild(tr);
-    });
-
     tabella.append(thead, tbody);
     contenitore.appendChild(tabella);
 
-    return contenitore;
+    return {
+        contenitore,
+        tabella,
+        tbody
+    };
 }
 
 // --------------------------------------------------
-// ARCHIVIO COPPIE - SOLA VISUALIZZAZIONE
+// ARCHIVIO COPPIE - TABELLA IN SOLA VISUALIZZAZIONE
 // --------------------------------------------------
 
 async function caricaCoppie() {
@@ -188,11 +159,21 @@ async function caricaCoppie() {
 
     const { data, error } = await client
         .from("coppie")
-        .select("id, codice, maschio_anello, maschio_mutazione, femmina_anello, femmina_mutazione, created_at")
+        .select(`
+            id,
+            codice,
+            maschio_anello,
+            maschio_mutazione,
+            femmina_anello,
+            femmina_mutazione,
+            created_at
+        `)
         .order("created_at", { ascending: false });
 
     if (error) {
-        listaCoppie.textContent = "Errore nel caricamento: " + error.message;
+        listaCoppie.textContent =
+            "Errore nel caricamento: " + error.message;
+
         console.error("Errore coppie:", error);
         return;
     }
@@ -208,42 +189,45 @@ async function caricaCoppie() {
 
     if (totale === 0) {
         listaCoppie.appendChild(
-            creaElemento("p", "empty-state", "Non hai ancora coppie registrate.")
+            creaElemento(
+                "p",
+                "empty-state",
+                "Non hai ancora coppie registrate."
+            )
         );
+
         return;
     }
 
-    const righe = coppieArchivio.map(coppia => [
-        creaElemento(
-            "strong",
-            "table-code",
-            coppia.codice || "Senza codice"
-        ),
-
-        creaDettaglioTabella(
-            "♂ Maschio",
-            [
-                coppia.maschio_anello,
-                coppia.maschio_mutazione
-            ].filter(Boolean).join(" · ")
-        ),
-
-        creaDettaglioTabella(
-            "♀ Femmina",
-            [
-                coppia.femmina_anello,
-                coppia.femmina_mutazione
-            ].filter(Boolean).join(" · ")
-        )
-    ]);
-
-    listaCoppie.appendChild(
-        creaTabellaCompatta(
-            ["Coppia", "Maschio", "Femmina"],
-            righe,
-            "tabella-coppie"
-        )
+    const { contenitore, tbody } = creaTabella(
+        "tabella-coppie",
+        [
+            "Coppia",
+            "Maschio - Anello",
+            "Maschio - Mutazione",
+            "Femmina - Anello",
+            "Femmina - Mutazione"
+        ]
     );
+
+    coppieArchivio.forEach(coppia => {
+        const riga = document.createElement("tr");
+
+        creaCella(
+            riga,
+            coppia.codice || "Coppia",
+            "table-code"
+        );
+
+        creaCella(riga, coppia.maschio_anello);
+        creaCella(riga, coppia.maschio_mutazione);
+        creaCella(riga, coppia.femmina_anello);
+        creaCella(riga, coppia.femmina_mutazione);
+
+        tbody.appendChild(riga);
+    });
+
+    listaCoppie.appendChild(contenitore);
 }
 
 // --------------------------------------------------
@@ -268,10 +252,13 @@ async function caricaAnniDashboard() {
         annoDashboard.appendChild(opzione);
 
         annoSelezionato = Number(opzione.value);
+
         return;
     }
 
-    const anni = [...new Set((data || []).map(item => Number(item.anno)))]
+    const anni = [...new Set(
+        (data || []).map(item => Number(item.anno))
+    )]
         .filter(Number.isFinite)
         .sort((a, b) => b - a);
 
@@ -285,6 +272,7 @@ async function caricaAnniDashboard() {
 
     anni.forEach(anno => {
         const opzione = document.createElement("option");
+
         opzione.value = String(anno);
         opzione.textContent = String(anno);
 
@@ -396,11 +384,19 @@ async function caricaStatisticheStagione() {
         .select("*", { count: "exact", head: true })
         .in("covata_id", idsCovate);
 
-    statUova.textContent = erroreUova ? "!" : (conteggioUova ?? 0);
-    statPulli.textContent = errorePulli ? "!" : (conteggioPulli ?? 0);
+    statUova.textContent =
+        erroreUova ? "!" : (conteggioUova ?? 0);
 
-    if (erroreUova) console.error("Errore conteggio uova:", erroreUova);
-    if (errorePulli) console.error("Errore conteggio pulli:", errorePulli);
+    statPulli.textContent =
+        errorePulli ? "!" : (conteggioPulli ?? 0);
+
+    if (erroreUova) {
+        console.error("Errore conteggio uova:", erroreUova);
+    }
+
+    if (errorePulli) {
+        console.error("Errore conteggio pulli:", errorePulli);
+    }
 }
 
 // --------------------------------------------------
@@ -409,6 +405,7 @@ async function caricaStatisticheStagione() {
 
 async function caricaRegistroNati() {
     listaNati.replaceChildren();
+
     messaggioRegistro.textContent = "Caricamento soggetti...";
 
     archivioNati = [];
@@ -434,12 +431,16 @@ async function caricaRegistroNati() {
                     stato,
                     note
                 `)
-                .order("data_nascita", { ascending: false, nullsFirst: false })
+                .order("data_nascita", {
+                    ascending: false,
+                    nullsFirst: false
+                })
                 .range(offset, offset + dimensionePagina - 1);
 
             if (error) throw error;
 
             const pagina = data || [];
+
             tuttiIPulli = tuttiIPulli.concat(pagina);
 
             if (pagina.length < dimensionePagina) break;
@@ -452,12 +453,20 @@ async function caricaRegistroNati() {
                 "Non risultano ancora soggetti nati registrati.";
 
             numeroNati.textContent = "0 soggetti";
+
             popolaFiltriRegistro([]);
+
             return;
         }
 
+        // Recupera le covate di provenienza.
+
         const idsCovate = [
-            ...new Set(tuttiIPulli.map(p => p.covata_id).filter(Boolean))
+            ...new Set(
+                tuttiIPulli
+                    .map(p => p.covata_id)
+                    .filter(Boolean)
+            )
         ];
 
         const mappaCovate = new Map();
@@ -474,6 +483,8 @@ async function caricaRegistroNati() {
                 mappaCovate.set(covata.id, covata);
             });
         }
+
+        // Recupera le stagioni riproduttive.
 
         const idsAnni = [
             ...new Set(
@@ -498,6 +509,8 @@ async function caricaRegistroNati() {
             });
         }
 
+        // Recupera le coppie di provenienza.
+
         const idsCoppie = [
             ...new Set(
                 [...mappaAnni.values()]
@@ -521,11 +534,15 @@ async function caricaRegistroNati() {
             });
         }
 
+        // Costruisce l'archivio generale con i riferimenti.
+
         archivioNati = tuttiIPulli.map(pullo => {
             const covata = mappaCovate.get(pullo.covata_id) || null;
+
             const stagione = covata
                 ? mappaAnni.get(covata.anno_id) || null
                 : null;
+
             const coppia = stagione
                 ? mappaCoppie.get(stagione.coppia_id) || null
                 : null;
@@ -540,12 +557,14 @@ async function caricaRegistroNati() {
         });
 
         popolaFiltriRegistro(archivioNati);
+
         applicaFiltriRegistro();
 
     } catch (error) {
         console.error("Errore registro generale dei nati:", error);
 
         numeroNati.textContent = "!";
+
         messaggioRegistro.textContent =
             "Errore nel caricamento del registro: " + error.message;
     }
@@ -557,9 +576,9 @@ async function caricaRegistroNati() {
 
 function popolaFiltriRegistro(elenco) {
     const anni = [...new Set(
-        elenco.map(p => p.anno).filter(anno =>
-            anno !== null && anno !== undefined
-        )
+        elenco
+            .map(p => p.anno)
+            .filter(anno => anno !== null && anno !== undefined)
     )].sort((a, b) => Number(b) - Number(a));
 
     const coppie = [...new Map(
@@ -573,7 +592,10 @@ function popolaFiltriRegistro(elenco) {
                 }
             ])
     ).values()].sort((a, b) =>
-        String(a.codice || "").localeCompare(String(b.codice || ""), "it")
+        String(a.codice || "").localeCompare(
+            String(b.codice || ""),
+            "it"
+        )
     );
 
     const annoPrecedente = filtroAnnoNati.value;
@@ -588,11 +610,18 @@ function popolaFiltriRegistro(elenco) {
     );
 
     tutteLeStagioni.value = "";
+
     filtroAnnoNati.appendChild(tutteLeStagioni);
 
     anni.forEach(anno => {
-        const opzione = creaElemento("option", "", String(anno));
+        const opzione = creaElemento(
+            "option",
+            "",
+            String(anno)
+        );
+
         opzione.value = String(anno);
+
         filtroAnnoNati.appendChild(opzione);
     });
 
@@ -605,6 +634,7 @@ function popolaFiltriRegistro(elenco) {
     );
 
     tutteLeCoppie.value = "";
+
     filtroCoppiaNati.appendChild(tutteLeCoppie);
 
     coppie.forEach(coppia => {
@@ -615,6 +645,7 @@ function popolaFiltriRegistro(elenco) {
         );
 
         opzione.value = coppia.id;
+
         filtroCoppiaNati.appendChild(opzione);
     });
 
@@ -640,8 +671,7 @@ function applicaFiltriRegistro() {
             pullo.stato,
             pullo.coppia_codice,
             pullo.numero_covata,
-            pullo.anno,
-            pullo.note
+            pullo.anno
         ].some(valore =>
             String(valore || "").toLowerCase().includes(testo)
         );
@@ -652,21 +682,26 @@ function applicaFiltriRegistro() {
         const corrispondeCoppia =
             !coppia || pullo.coppia_id === coppia;
 
-        return corrispondeTesto && corrispondeAnno && corrispondeCoppia;
+        return (
+            corrispondeTesto &&
+            corrispondeAnno &&
+            corrispondeCoppia
+        );
     });
 
     mostraNatiRegistro(filtrati);
 }
 
 // --------------------------------------------------
-// VISUALIZZAZIONE REGISTRO IN TABELLA
+// VISUALIZZAZIONE NATI - TABELLA COMPATTA
 // --------------------------------------------------
 
 function mostraNatiRegistro(elenco) {
     listaNati.replaceChildren();
 
     numeroNati.textContent =
-        elenco.length + (elenco.length === 1 ? " soggetto" : " soggetti");
+        elenco.length +
+        (elenco.length === 1 ? " soggetto" : " soggetti");
 
     messaggioRegistro.textContent =
         elenco.length === 0
@@ -675,54 +710,75 @@ function mostraNatiRegistro(elenco) {
 
     if (elenco.length === 0) {
         listaNati.appendChild(
-            creaElemento("p", "empty-state", "Nessun risultato da visualizzare.")
+            creaElemento(
+                "p",
+                "empty-state",
+                "Nessun risultato da visualizzare."
+            )
         );
+
         return;
     }
 
-    const righe = elenco.map(pullo => [
-        creaElemento(
-            "strong",
-            "table-code",
-            pullo.anello || "Senza anello"
-        ),
-        pullo.sesso || "—",
-        pullo.mutazione || "—",
-        formattaData(pullo.data_nascita) || "—",
-        formattaData(pullo.data_inanellamento) || "—",
-        formattaData(pullo.data_svezzamento) || "—",
-        creaElemento(
+    const { contenitore, tbody } = creaTabella(
+        "tabella-nati",
+        [
+            "Anello",
+            "Stato",
+            "Sesso",
+            "Mutazione",
+            "Nascita",
+            "Inanellamento",
+            "Svezzamento",
+            "Coppia",
+            "Stagione",
+            "Covata",
+            "Note"
+        ]
+    );
+
+    elenco.forEach(pullo => {
+        const riga = document.createElement("tr");
+
+        creaCella(
+            riga,
+            pullo.anello || "Senza anello",
+            "table-code"
+        );
+
+        const cellaStato = creaCella(
+            riga,
+            pullo.stato || "Registrato"
+        );
+
+        const etichettaStato = creaElemento(
             "span",
             "table-status",
             pullo.stato || "Registrato"
-        ),
-        pullo.coppia_codice || "—",
-        pullo.anno ? String(pullo.anno) : "—",
-        pullo.numero_covata !== null && pullo.numero_covata !== undefined
-            ? String(pullo.numero_covata)
-            : "—",
-        pullo.note || "—"
-    ]);
+        );
 
-    listaNati.appendChild(
-        creaTabellaCompatta(
-            [
-                "Anello",
-                "Sesso",
-                "Mutazione",
-                "Nascita",
-                "Inanellamento",
-                "Svezzamento",
-                "Stato",
-                "Coppia",
-                "Stagione",
-                "Covata",
-                "Note"
-            ],
-            righe,
-            "tabella-nati"
-        )
-    );
+        cellaStato.replaceChildren(etichettaStato);
+
+        creaCella(riga, pullo.sesso);
+        creaCella(riga, pullo.mutazione);
+        creaCella(riga, formattaData(pullo.data_nascita));
+        creaCella(riga, formattaData(pullo.data_inanellamento));
+        creaCella(riga, formattaData(pullo.data_svezzamento));
+        creaCella(riga, pullo.coppia_codice || "Non disponibile");
+        creaCella(riga, pullo.anno || "Non disponibile");
+        creaCella(
+            riga,
+            pullo.numero_covata !== null &&
+            pullo.numero_covata !== undefined
+                ? pullo.numero_covata
+                : "Non disponibile"
+        );
+        creaCella(riga, pullo.note || "—");
+
+        tbody.appendChild(riga);
+    });
+
+    listaNati.appendChild(contenitore);
 }
 
 ricercaNati.addEventListener("input", applicaFiltriRegistro);
@@ -742,8 +798,11 @@ async function caricaPromemoria() {
         .eq("anno", annoSelezionato);
 
     if (erroreStagioni) {
-        listaPromemoria.textContent = "Impossibile caricare i promemoria.";
+        listaPromemoria.textContent =
+            "Impossibile caricare i promemoria.";
+
         console.error(erroreStagioni);
+
         return;
     }
 
@@ -751,19 +810,32 @@ async function caricaPromemoria() {
 
     if (idsStagioni.length === 0) {
         listaPromemoria.appendChild(
-            creaElemento("p", "empty-state", "Nessun promemoria per questa stagione.")
+            creaElemento(
+                "p",
+                "empty-state",
+                "Nessun promemoria per questa stagione."
+            )
         );
+
         return;
     }
 
     const { data: covate, error: erroreCovate } = await client
         .from("covate")
-        .select("id, numero, data_speratura_prevista, data_schiusa_prevista")
+        .select(`
+            id,
+            numero,
+            data_speratura_prevista,
+            data_schiusa_prevista
+        `)
         .in("anno_id", idsStagioni);
 
     if (erroreCovate) {
-        listaPromemoria.textContent = "Errore nel caricamento delle covate.";
+        listaPromemoria.textContent =
+            "Errore nel caricamento delle covate.";
+
         console.error(erroreCovate);
+
         return;
     }
 
@@ -796,14 +868,26 @@ async function caricaPromemoria() {
     if (idsCovate.length > 0) {
         const { data: pulli, error: errorePulli } = await client
             .from("pulli")
-            .select("id, anello, data_nascita, data_inanellamento, covata_id")
+            .select(`
+                id,
+                anello,
+                data_nascita,
+                data_inanellamento,
+                covata_id
+            `)
             .in("covata_id", idsCovate);
 
         if (errorePulli) {
-            console.error("Errore promemoria inanellamento:", errorePulli);
+            console.error(
+                "Errore promemoria inanellamento:",
+                errorePulli
+            );
         } else {
             (pulli || []).forEach(pullo => {
-                if (!pullo.data_inanellamento && pullo.data_nascita) {
+                if (
+                    !pullo.data_inanellamento &&
+                    pullo.data_nascita
+                ) {
                     promemoria.push({
                         tipo: "Inanellamento",
                         data: pullo.data_nascita,
@@ -815,38 +899,61 @@ async function caricaPromemoria() {
         }
     }
 
-    promemoria.sort((a, b) => a.data.localeCompare(b.data));
+    promemoria.sort((a, b) =>
+        a.data.localeCompare(b.data)
+    );
 
     const promemoriaVisibili = promemoria.filter(item => {
         const dataItem = new Date(item.data + "T00:00:00");
+
         return !Number.isNaN(dataItem.getTime());
     });
 
     if (promemoriaVisibili.length === 0) {
         listaPromemoria.appendChild(
-            creaElemento("p", "empty-state", "Nessun promemoria registrato per questa stagione.")
+            creaElemento(
+                "p",
+                "empty-state",
+                "Nessun promemoria registrato per questa stagione."
+            )
         );
+
         return;
     }
 
     promemoriaVisibili.forEach(item => {
         const dataItem = new Date(item.data + "T00:00:00");
+
         const scaduto = dataItem < oggi;
-        const oggiStesso = dataItem.getTime() === oggi.getTime();
+
+        const oggiStesso =
+            dataItem.getTime() === oggi.getTime();
 
         const card = creaElemento("article", "reminder-card");
 
-        if (scaduto) card.classList.add("reminder-overdue");
-        if (oggiStesso) card.classList.add("reminder-today");
+        if (scaduto) {
+            card.classList.add("reminder-overdue");
+        }
 
-        const contenuto = creaElemento("div", "reminder-content");
+        if (oggiStesso) {
+            card.classList.add("reminder-today");
+        }
+
+        const contenuto = creaElemento(
+            "div",
+            "reminder-content"
+        );
 
         contenuto.append(
             creaElemento("strong", "", item.testo),
             creaElemento("small", "", item.tipo)
         );
 
-        const data = creaElemento("span", "reminder-date", formattaData(item.data));
+        const data = creaElemento(
+            "span",
+            "reminder-date",
+            formattaData(item.data)
+        );
 
         if (scaduto) {
             data.textContent += " · Da verificare";
@@ -855,6 +962,7 @@ async function caricaPromemoria() {
         }
 
         card.append(contenuto, data);
+
         listaPromemoria.appendChild(card);
     });
 }
@@ -867,13 +975,16 @@ async function inizializzaApplicazione() {
     if (!client) {
         authMessage.textContent =
             "Errore: collegamento Supabase non disponibile.";
+
         return;
     }
 
     const { data, error } = await client.auth.getSession();
 
     if (error) {
-        authMessage.textContent = "Errore sessione: " + error.message;
+        authMessage.textContent =
+            "Errore sessione: " + error.message;
+
         return;
     }
 

@@ -369,6 +369,10 @@ wrapper.appendChild(table);
 area.appendChild(wrapper);
 }
 
+// --------------------------------------------------
+// REGISTRAZIONE NUOVO RIPRODUTTORE
+// --------------------------------------------------
+
 $("newBreederForm").addEventListener("submit",async e=>{
 
 e.preventDefault();
@@ -388,9 +392,20 @@ const button=$("newBreederButton");
 button.disabled=true;
 message("newBreederMessage","Registrazione in corso...");
 
+// Recupera l'utente autenticato
+const {data:userData,error:userError}=await client.auth.getUser();
+
+if(userError||!userData.user){
+button.disabled=false;
+message("newBreederMessage","Sessione non valida. Effettua nuovamente l'accesso.","error");
+return;
+}
+
+// Registra il soggetto associandolo al proprietario
 const {data,error}=await client
 .from("riproduttori")
 .insert({
+user_id:userData.user.id,
 anello,
 sesso,
 mutazione:mutazione||null,

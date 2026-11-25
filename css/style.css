@@ -837,3 +837,34 @@ input:focus, select:focus {
         font-size: 7px;
     }
 }
+/* CORREZIONE DEFINITIVA LARGHEZZA TABELLE */
+
+.dashboard {
+    width: 96% !important;
+    max-width: none !important;
+}
+
+.table-responsive {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    grid-column: 1 / -1 !important;
+    justify-self: stretch !important;
+    overflow-x: visible !important;
+}
+
+.table-responsive .responsive-table {
+    display: table !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+}
+
+.tabella-coppie,
+.tabella-nati {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+}

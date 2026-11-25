@@ -1,5 +1,4 @@
-
-const client = window.supabaseClient;
+ const client = window.supabaseClient;
 
 const loginForm = document.getElementById("login-form");
 const loginArea = document.getElementById("login-area");
@@ -575,11 +574,14 @@ async function caricaRegistroNati() {
 // --------------------------------------------------
 
 function popolaFiltriRegistro(elenco) {
-    const anni = [...new Set(
-        elenco
-            .map(p => p.anno)
-            .filter(anno => anno !== null && anno !== undefined)
-    )].sort((a, b) => Number(b) - Number(a));
+    const anniPresenti = elenco
+        .map(p => Number(p.anno))
+        .filter(anno => Number.isInteger(anno) && anno > 0);
+
+    const anni = [...new Set([
+        ...Array.from({ length: 10 }, (_, indice) => 2026 + indice),
+        ...anniPresenti
+    ])].sort((a, b) => b - a);
 
     const coppie = [...new Map(
         elenco

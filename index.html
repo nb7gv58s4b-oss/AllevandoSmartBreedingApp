@@ -100,13 +100,64 @@
             </div>
         </section>
 
+        <!-- REGISTRO GENERALE DEI NATI -->
+
+        <section class="section-block" id="registro-nati-section">
+
+            <div class="section-title">
+                <div>
+                    <p class="eyebrow">ARCHIVIO GENERALE</p>
+                    <h2>Registro generale dei nati</h2>
+                    <p>Tutti i soggetti nati nel tuo allevamento, indipendentemente dalla coppia e dalla stagione.</p>
+                </div>
+
+                <span class="counter" id="numero-nati">0 soggetti</span>
+            </div>
+
+            <div class="registro-filters">
+
+                <div class="registro-search">
+                    <label for="ricerca-nati">Cerca soggetto</label>
+                    <input
+                        type="search"
+                        id="ricerca-nati"
+                        placeholder="Cerca per anello, sesso o mutazione..."
+                    >
+                </div>
+
+                <div>
+                    <label for="filtro-anno-nati">Stagione</label>
+                    <select id="filtro-anno-nati">
+                        <option value="">Tutte le stagioni</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="filtro-coppia-nati">Coppia</label>
+                    <select id="filtro-coppia-nati">
+                        <option value="">Tutte le coppie</option>
+                    </select>
+                </div>
+
+            </div>
+
+            <p id="registro-nati-message" class="registro-message" role="status">
+                Caricamento registro...
+            </p>
+
+            <div id="lista-nati" class="registro-nati-grid"></div>
+
+        </section>
+
+        <!-- ARCHIVIO COPPIE IN SOLA VISUALIZZAZIONE -->
+
         <section class="section-block" id="coppie-section">
 
             <div class="section-title">
                 <div>
                     <p class="eyebrow">LE TUE SMART CARD</p>
                     <h2>Le mie coppie</h2>
-                    <p>Seleziona una coppia per aprire la sua scheda digitale.</p>
+                    <p>Consulta le coppie registrate. Per accedere alle schede operative è necessario scansionare la Smart Card NFC.</p>
                 </div>
 
                 <span class="counter" id="numero-coppie">0 coppie</span>

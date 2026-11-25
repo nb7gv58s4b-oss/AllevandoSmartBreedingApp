@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -6,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ALLEVANDO - Programmazione NFC</title>
     <link rel="stylesheet" href="css/style.css">
-
     <style>
         body {
             margin: 0;
@@ -15,12 +13,10 @@
             font-family: Arial, sans-serif;
             color: #202938;
         }
-
         .container {
             max-width: 850px;
             margin: 25px auto;
         }
-
         .panel {
             background: white;
             padding: 24px;
@@ -28,10 +24,13 @@
             margin-bottom: 20px;
             box-shadow: 0 3px 15px rgba(0,0,0,.06);
         }
-
         h1 { margin-top: 0; color: #173d32; }
         h2 { font-size: 19px; }
-
+        label {
+            display: block;
+            font-weight: bold;
+            margin-top: 12px;
+        }
         input {
             width: 100%;
             box-sizing: border-box;
@@ -41,7 +40,6 @@
             border-radius: 8px;
             font-size: 16px;
         }
-
         button {
             border: 0;
             border-radius: 8px;
@@ -52,24 +50,20 @@
             background: #176b50;
             color: white;
         }
-
         button:disabled {
             opacity: .5;
             cursor: not-allowed;
         }
-
         .secondary {
             background: #e8edf0;
             color: #263442;
         }
-
         .card {
             border: 1px solid #e0e6e9;
             border-radius: 10px;
             padding: 16px;
             margin-top: 12px;
         }
-
         .status {
             padding: 12px;
             border-radius: 8px;
@@ -77,26 +71,21 @@
             background: #eef3f5;
             overflow-wrap: anywhere;
         }
-
         .success {
             background: #e5f5eb;
             color: #176b36;
         }
-
         .error {
             background: #fdeaea;
             color: #a32626;
         }
-
         .muted {
             color: #687582;
             font-size: 14px;
         }
-
         .hidden {
             display: none;
         }
-
         .link {
             display: block;
             overflow-wrap: anywhere;
@@ -106,172 +95,150 @@
             margin: 10px 0;
             font-size: 13px;
         }
-
         .actions {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-top: 12px;
         }
+        .card-number {
+            color: #176b50;
+            font-weight: bold;
+        }
+        .form-note {
+            background: #f5f8f6;
+            border-left: 4px solid #176b50;
+            padding: 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
     </style>
 </head>
-
 <body>
-
 <div class="container">
-
     <div class="panel">
         <h1>ALLEVANDO Smart Breeding™</h1>
         <h2>Programmazione Smart Card NFC</h2>
-
         <p class="muted">
-            Gestione e assegnazione delle Smart Card NFC
-            permanenti alle coppie.
+            Creazione e assegnazione delle Smart Card agli account
+            degli allevatori.
         </p>
     </div>
-
     <div class="panel" id="loginPanel">
         <h2>Accesso amministratore</h2>
-
         <form id="loginForm">
-            <label>Email</label>
+            <label for="email">Email</label>
             <input type="email" id="email" required>
-
-            <label>Password</label>
+            <label for="password">Password</label>
             <input type="password" id="password" required>
-
             <button type="submit" id="loginButton">
                 Accedi
             </button>
         </form>
-
         <div id="loginMessage" class="status hidden"></div>
     </div>
-
     <div id="appPanel" class="hidden">
-
         <div class="panel">
-
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-
-                <h2>Coppie registrate</h2>
-
+                <h2>Assegna Smart Card all'allevatore</h2>
                 <button class="secondary" id="logoutButton">
                     Esci
                 </button>
-
             </div>
-
-            <p class="muted">
-                Ogni coppia può avere una sola Smart Card permanente.
-                Seleziona una coppia per assegnare o visualizzare
-                il suo collegamento NFC.
-            </p>
-
-            <button id="refreshButton" class="secondary">
-                Aggiorna elenco
-            </button>
-
-            <div id="listMessage" class="status hidden"></div>
-
-            <div id="coppieList"></div>
-
-        </div>
-
-        <div class="panel hidden" id="resultPanel">
-
-            <h2>Collegamento Smart Card NFC</h2>
-
-            <div id="resultMessage" class="status success"></div>
-
             <p>
-                Questo è il collegamento permanente della coppia:
+                Inserisci l'indirizzo email dell'allevatore e il numero
+                di Smart Card da assegnargli.
             </p>
-
-            <div class="link" id="generatedLink"></div>
-
+            <div class="form-note">
+                Le card vengono assegnate all'account dell'allevatore,
+                ma non sono ancora collegate a nessuna coppia.
+                La coppia verrà configurata dall'allevatore alla prima
+                scansione della Smart Card.
+            </div>
+            <form id="assignForm">
+                <label for="breederEmail">
+                    Email dell'allevatore
+                </label>
+                <input
+                    type="email"
+                    id="breederEmail"
+                    placeholder="nome@email.it"
+                    required
+                >
+                <label for="quantity">
+                    Numero di Smart Card da creare
+                </label>
+                <input
+                    type="number"
+                    id="quantity"
+                    min="1"
+                    max="100"
+                    value="1"
+                    required
+                >
+                <button type="submit" id="generateButton">
+                    Crea e assegna Smart Card
+                </button>
+            </form>
+            <div id="assignMessage" class="status hidden"></div>
+            <div id="progressPanel" class="hidden">
+                <p id="progressText" class="muted"></p>
+            </div>
+        </div>
+        <div class="panel hidden" id="resultPanel">
+            <h2>Smart Card generate</h2>
+            <p class="muted">
+                Ogni card ha un codice univoco e un collegamento
+                personale da programmare sul relativo supporto NFC.
+            </p>
+            <div id="resultSummary" class="status success"></div>
             <div class="actions">
-                <button id="copyButton">
-                    Copia collegamento
+                <button id="copyAllButton">
+                    Copia tutti i collegamenti
+                </button>
+                <button class="secondary" id="newGenerationButton">
+                    Nuova assegnazione
                 </button>
             </div>
-
-            <h2>Programmazione della card</h2>
-
-            <ol>
-                <li>Apri un'app di scrittura NFC, ad esempio NFC Tools.</li>
-                <li>Seleziona la funzione per scrivere un URL.</li>
-                <li>Incolla il collegamento copiato.</li>
-                <li>Avvicina la Smart Card al telefono.</li>
-                <li>Completa la scrittura e verifica la scansione.</li>
-            </ol>
-
-            <p class="muted">
-                La card rimane associata alla stessa coppia
-                anche nelle successive stagioni riproduttive.
-            </p>
-
+            <div id="generatedCards"></div>
         </div>
-
     </div>
-
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/supabase.js"></script>
-
 <script>
-
 const client = window.supabaseClient;
-
 const loginPanel = document.getElementById("loginPanel");
 const appPanel = document.getElementById("appPanel");
-
 const loginMessage = document.getElementById("loginMessage");
-const listMessage = document.getElementById("listMessage");
-
-const coppieList = document.getElementById("coppieList");
-
+const assignMessage = document.getElementById("assignMessage");
 const resultPanel = document.getElementById("resultPanel");
-const resultMessage = document.getElementById("resultMessage");
-const generatedLink = document.getElementById("generatedLink");
-
-let currentLink = "";
-
+const resultSummary = document.getElementById("resultSummary");
+const generatedCards = document.getElementById("generatedCards");
+const progressPanel = document.getElementById("progressPanel");
+const progressText = document.getElementById("progressText");
+let createdCards = [];
 function showMessage(element, message, type = "") {
     element.textContent = message;
     element.className = "status " + type;
     element.classList.remove("hidden");
 }
-
 function hideMessage(element) {
     element.classList.add("hidden");
 }
-
-function makeLink(code) {
-    return new URL(
-        "coppia.html?tag=" + encodeURIComponent(code),
-        window.location.href
-    ).href;
-}
-
 async function showApp() {
     loginPanel.classList.add("hidden");
     appPanel.classList.remove("hidden");
     resultPanel.classList.add("hidden");
-
-    await loadCoppie();
 }
-
 async function checkSession() {
     const { data, error } = await client.auth.getSession();
-
     if (error) {
         showMessage(loginMessage, error.message, "error");
         return;
     }
-
     if (data.session) {
         await showApp();
     } else {
@@ -279,29 +246,20 @@ async function checkSession() {
         appPanel.classList.add("hidden");
     }
 }
-
 document.getElementById("loginForm").addEventListener("submit", async event => {
-
     event.preventDefault();
-
     const button = document.getElementById("loginButton");
-
     button.disabled = true;
     button.textContent = "Accesso in corso...";
-
     hideMessage(loginMessage);
-
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
-
     const { error } = await client.auth.signInWithPassword({
         email,
         password
     });
-
     button.disabled = false;
     button.textContent = "Accedi";
-
     if (error) {
         showMessage(
             loginMessage,
@@ -310,240 +268,187 @@ document.getElementById("loginForm").addEventListener("submit", async event => {
         );
         return;
     }
-
     await showApp();
-
 });
-
 document.getElementById("logoutButton").addEventListener("click", async () => {
-
     await client.auth.signOut();
-
+    createdCards = [];
     resultPanel.classList.add("hidden");
     appPanel.classList.add("hidden");
     loginPanel.classList.remove("hidden");
-
 });
-
-document.getElementById("refreshButton").addEventListener("click", loadCoppie);
-
-async function loadCoppie() {
-
-    coppieList.innerHTML = "";
-
-    hideMessage(listMessage);
-
-    showMessage(listMessage, "Caricamento coppie...");
-
-    const { data, error } = await client.rpc("lista_coppie_per_tag");
-
-    if (error) {
-
-        showMessage(
-            listMessage,
-            "Errore nel caricamento delle coppie: " + error.message,
-            "error"
-        );
-
-        return;
-    }
-
-    if (!data || !data.successo || !Array.isArray(data.coppie)) {
-
-        showMessage(
-            listMessage,
-            "Il sistema non ha restituito un elenco valido.",
-            "error"
-        );
-
-        return;
-    }
-
-    hideMessage(listMessage);
-
-    if (data.coppie.length === 0) {
-
-        showMessage(
-            listMessage,
-            "Non risultano coppie registrate."
-        );
-
-        return;
-    }
-
-    data.coppie.forEach(coppia => {
-
+function renderCards() {
+    generatedCards.innerHTML = "";
+    createdCards.forEach((cardData, index) => {
         const card = document.createElement("div");
         card.className = "card";
-
-        const title = document.createElement("h2");
-
-        title.textContent = "Coppia " + (coppia.codice || "—");
-
-        const male = document.createElement("p");
-        male.className = "muted";
-
-        male.textContent =
-            "Maschio: " +
-            (coppia.maschio_anello || "Non indicato") +
-            " · " +
-            (coppia.maschio_mutazione || "—");
-
-        const female = document.createElement("p");
-        female.className = "muted";
-
-        female.textContent =
-            "Femmina: " +
-            (coppia.femmina_anello || "Non indicata") +
-            " · " +
-            (coppia.femmina_mutazione || "—");
-
-        const status = document.createElement("p");
-
-        status.textContent = coppia.tag_attivo
-            ? "Smart Card NFC già associata"
-            : "Nessuna Smart Card associata";
-
-        const button = document.createElement("button");
-
-        button.textContent = coppia.tag_attivo
-            ? "Visualizza collegamento"
-            : "Assegna Smart Card NFC";
-
-        button.addEventListener("click", () => {
-
-            if (coppia.tag_attivo && coppia.codice_tag) {
-
-                currentLink = makeLink(coppia.codice_tag);
-
-                resultMessage.textContent =
-                    "Questa coppia ha già una Smart Card NFC attiva.";
-
-                resultMessage.className = "status success";
-
-                generatedLink.textContent = currentLink;
-
-                resultPanel.classList.remove("hidden");
-
-                resultPanel.scrollIntoView({
-                    behavior: "smooth"
-                });
-
-            } else {
-
-                assignTag(coppia.id, button);
-
-            }
-
+        const title = document.createElement("h3");
+        title.className = "card-number";
+        title.textContent = "Smart Card n. " + (index + 1);
+        const email = document.createElement("p");
+        email.className = "muted";
+        email.textContent = "Allevatore: " + cardData.email;
+        const codeLabel = document.createElement("p");
+        codeLabel.textContent = "Codice univoco:";
+        const code = document.createElement("div");
+        code.className = "link";
+        code.textContent = cardData.codice;
+        const linkLabel = document.createElement("p");
+        linkLabel.textContent = "Collegamento da programmare:";
+        const link = document.createElement("div");
+        link.className = "link";
+        link.textContent = cardData.collegamento;
+        const copyButton = document.createElement("button");
+        copyButton.textContent = "Copia collegamento";
+        copyButton.addEventListener("click", async () => {
+            await copyText(cardData.collegamento);
         });
-
         card.appendChild(title);
-        card.appendChild(male);
-        card.appendChild(female);
-        card.appendChild(status);
-        card.appendChild(button);
-
-        coppieList.appendChild(card);
-
+        card.appendChild(email);
+        card.appendChild(codeLabel);
+        card.appendChild(code);
+        card.appendChild(linkLabel);
+        card.appendChild(link);
+        card.appendChild(copyButton);
+        generatedCards.appendChild(card);
     });
-
-    showMessage(
-        listMessage,
-        "Coppie caricate: " + data.coppie.length,
-        "success"
-    );
-
 }
-
-async function assignTag(coppiaId, button) {
-
-    if (!confirm(
-        "Vuoi assegnare una Smart Card NFC permanente a questa coppia?"
-    )) {
+async function copyText(text) {
+    try {
+        await navigator.clipboard.writeText(text);
+        alert("Collegamento copiato correttamente.");
+    } catch (error) {
+        alert(
+            "Copia automatica non disponibile. Seleziona e copia il collegamento visualizzato."
+        );
+    }
+}
+document.getElementById("assignForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = document.getElementById("generateButton");
+    const email = document.getElementById("breederEmail").value.trim();
+    const quantity = Number(document.getElementById("quantity").value);
+    if (!email) {
+        showMessage(assignMessage, "Inserisci l'email dell'allevatore.", "error");
         return;
     }
-
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
+        showMessage(
+            assignMessage,
+            "Inserisci un numero di card compreso tra 1 e 100.",
+            "error"
+        );
+        return;
+    }
+    const confirmed = confirm(
+        "Confermi la creazione di " + quantity +
+        " Smart Card NFC per l'account " + email + "?"
+    );
+    if (!confirmed) return;
+    createdCards = [];
+    generatedCards.innerHTML = "";
+    resultPanel.classList.add("hidden");
+    hideMessage(assignMessage);
     button.disabled = true;
-    button.textContent = "Associazione in corso...";
-
-    const { data, error } = await client.rpc("assegna_tag_coppia", {
-        p_coppia_id: coppiaId,
-        p_tipo: "NFC"
-    });
-
+    button.textContent = "Creazione in corso...";
+    progressPanel.classList.remove("hidden");
+    let failed = false;
+    let errorMessage = "";
+    for (let i = 0; i < quantity; i++) {
+        progressText.textContent =
+            "Creazione Smart Card " + (i + 1) + " di " + quantity + "...";
+        const { data, error } = await client.rpc("assegna_tag_allevatore", {
+            p_email: email,
+            p_tipo: "NFC"
+        });
+        if (error) {
+            failed = true;
+            errorMessage = error.message;
+            break;
+        }
+        if (
+            !data ||
+            !data.successo ||
+            !data.codice ||
+            !data.collegamento
+        ) {
+            failed = true;
+            errorMessage =
+                "La funzione non ha restituito tutti i dati della Smart Card.";
+            break;
+        }
+        createdCards.push({
+            codice: data.codice,
+            collegamento: data.collegamento,
+            email: data.email || email,
+            user_id: data.user_id,
+            tag_id: data.tag_id
+        });
+        renderCards();
+    }
     button.disabled = false;
-    button.textContent = "Assegna Smart Card NFC";
-
-    if (error) {
-
-        alert("Errore nell'associazione: " + error.message);
-
-        return;
+    button.textContent = "Crea e assegna Smart Card";
+    progressPanel.classList.add("hidden");
+    if (createdCards.length > 0) {
+        resultPanel.classList.remove("hidden");
+        resultSummary.textContent =
+            "Smart Card create correttamente: " +
+            createdCards.length +
+            " su " + quantity + ".";
+        renderCards();
+        resultPanel.scrollIntoView({
+            behavior: "smooth"
+        });
     }
-
-    if (!data || !data.successo || !data.codice) {
-
-        alert("Il sistema non ha restituito un codice NFC valido.");
-
-        return;
+    if (failed) {
+        showMessage(
+            assignMessage,
+            "Operazione interrotta dopo " +
+            createdCards.length +
+            " card create. Errore: " + errorMessage +
+            (createdCards.length > 0
+                ? " Le card già create sono visualizzate qui sotto e restano assegnate."
+                : ""),
+            "error"
+        );
+    } else {
+        showMessage(
+            assignMessage,
+            "Operazione completata. Tutte le " +
+            createdCards.length +
+            " Smart Card sono state assegnate all'account indicato.",
+            "success"
+        );
     }
-
-    currentLink = data.collegamento || makeLink(data.codice);
-
-    resultMessage.textContent =
-        "Smart Card NFC associata correttamente alla coppia.";
-
-    resultMessage.className = "status success";
-
-    generatedLink.textContent = currentLink;
-
-    resultPanel.classList.remove("hidden");
-
-    resultPanel.scrollIntoView({
+});
+document.getElementById("copyAllButton").addEventListener("click", async () => {
+    if (createdCards.length === 0) return;
+    const allLinks = createdCards
+        .map(card => card.collegamento)
+        .join("\n");
+    await copyText(allLinks);
+});
+document.getElementById("newGenerationButton").addEventListener("click", () => {
+    createdCards = [];
+    generatedCards.innerHTML = "";
+    resultPanel.classList.add("hidden");
+    document.getElementById("breederEmail").value = "";
+    document.getElementById("quantity").value = "1";
+    hideMessage(assignMessage);
+    window.scrollTo({
+        top: 0,
         behavior: "smooth"
     });
-
-    await loadCoppie();
-
-}
-
-document.getElementById("copyButton").addEventListener("click", async () => {
-
-    if (!currentLink) return;
-
-    try {
-
-        await navigator.clipboard.writeText(currentLink);
-
-        alert(
-            "Collegamento copiato! Puoi ora programmarlo sulla Smart Card."
-        );
-
-    } catch (error) {
-
-        alert(
-            "Impossibile copiare automaticamente. Seleziona e copia il collegamento visualizzato."
-        );
-
-    }
-
 });
-
 client.auth.onAuthStateChange(event => {
-
     if (event === "SIGNED_OUT") {
-
         loginPanel.classList.remove("hidden");
         appPanel.classList.add("hidden");
         resultPanel.classList.add("hidden");
-
+        createdCards = [];
     }
-
 });
-
 checkSession();
-
 </script>
-
 </body>
 </html>

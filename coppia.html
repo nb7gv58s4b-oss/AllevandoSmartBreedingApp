@@ -117,18 +117,26 @@ I soggetti già registrati saranno riconosciuti automaticamente. Se inserisci un
 <button id="breedersButton" type="submit">Salva riproduttori della stagione</button>
 <p id="breedersMessage"></p>
 </form>
+<hr>
+<h3>Gabbia della coppia</h3>
+<p class="muted">
+Indica la gabbia in cui si trova stabilmente questa coppia. Il dato verrà riportato automaticamente in ogni nuova covata.
+</p>
+<form id="cageForm">
+<label>Gabbia</label>
+<input id="pairCage" type="text" autocomplete="off" placeholder="Es. Gabbia 12">
+<button id="cageButton" type="submit">Salva gabbia</button>
+<p id="cageMessage"></p>
+</form>
 </div>
 <div class="panel">
 <h2>Nuova covata</h2>
+<p class="muted">La gabbia verrà acquisita automaticamente dalla scheda della coppia.</p>
 <form id="newCovataForm">
 <div class="grid">
 <div>
 <label>Numero covata</label>
 <input id="newNumero" type="number" min="1" required>
-</div>
-<div>
-<label>Gabbia</label>
-<input id="newGabbia" type="text">
 </div>
 <div>
 <label>Data deposizione</label>
@@ -167,9 +175,7 @@ $(id).className=cls;
 }
 function show(id){$(id).classList.remove("hidden")}
 function hide(id){$(id).classList.add("hidden")}
-function valore(v){
-return v===null||v===undefined?"":v;
-}
+function valore(v){return v===null||v===undefined?"":v}
 function dataIt(v){
 if(!v)return "Non indicata";
 const p=v.split("-");
@@ -228,12 +234,9 @@ $("femmina_anello").value=valore(stagioneSelezionata.femmina_anello);
 $("femmina_mutazione").value=valore(stagioneSelezionata.femmina_mutazione);
 }
 function renderSeason(){
-stagioneSelezionata=stagioni.find(s=>
-s.id===$("seasonSelect").value
-)||null;
+stagioneSelezionata=stagioni.find(s=>s.id===$("seasonSelect").value)||null;
 if(!stagioneSelezionata)return;
-$("seasonMessage").textContent=
-"Stagione riproduttiva "+stagioneSelezionata.anno;
+$("seasonMessage").textContent="Stagione riproduttiva "+stagioneSelezionata.anno;
 caricaCampiRiproduttori();
 message("breedersMessage","");
 message("newCovataMessage","");
@@ -283,14 +286,43 @@ message("breedersMessage","Riproduttori aggiornati correttamente. Aggiornamento 
 await loadSheet(stagioneId);
 });
 // --------------------------------------------------
+// SALVATAGGIO GABBIA DELLA COPPIA
+// --------------------------------------------------
+$("cageForm").addEventListener("submit",async e=>{
+e.preventDefault();
+if(!coppia)return;
+const gabbia=$("pairCage").value.trim();
+const button=$("cageButton");
+button.disabled=true;
+button.textContent="Salvataggio in corso...";
+message("cageMessage","Salvataggio della gabbia...");
+const {data,error}=await client
+.from("coppie")
+.update({gabbia:gabbia||null})
+.eq("id",coppia.id)
+.select("id,gabbia")
+.maybeSingle();
+button.disabled=false;
+button.textContent="Salva gabbia";
+if(error){
+message("cageMessage","Errore nel salvataggio della gabbia: "+error.message,"error");
+return;
+}
+if(!data){
+message("cageMessage","Non è stato possibile aggiornare la gabbia. Verifica i permessi della tabella coppie.","error");
+return;
+}
+coppia.gabbia=data.gabbia||"";
+$("pairCage").value=valore(coppia.gabbia);
+message("cageMessage","Gabbia salvata correttamente. Le prossime covate useranno questa gabbia.","success");
+});
+// --------------------------------------------------
 // COVATE
 // --------------------------------------------------
 function renderCovate(){
 const area=$("covateList");
 area.replaceChildren();
-if(!stagioneSelezionata||
-!stagioneSelezionata.covate||
-!stagioneSelezionata.covate.length){
+if(!stagioneSelezionata||!stagioneSelezionata.covate||!stagioneSelezionata.covate.length){
 area.textContent="Nessuna covata registrata per questa stagione.";
 return;
 }
@@ -307,7 +339,6 @@ info.textContent=
 " · Deposizione: "+dataIt(c.data_deposizione)+
 " · Stato: "+(c.stato||"Da definire");
 card.appendChild(info);
-// Fotografia storica dei genitori della covata
 const parents=document.createElement("div");
 parents.className="parentSnapshot";
 const male=document.createElement("p");
@@ -358,7 +389,6 @@ hide("firstSetup");
 message("globalMessage",error.message,"error");
 return;
 }
-// Smart Card libera: prima configurazione
 if(data&&data.successo===true&&data.stato==="da_configurare"){
 hide("main");
 show("firstSetup");
@@ -368,17 +398,27 @@ return;
 if(!data||!data.successo||!data.coppia){
 hide("main");
 hide("firstSetup");
-message(
-"globalMessage",
-data?.errore||"Scheda non trovata o non autorizzata.",
-"error"
-);
+message("globalMessage",data?.errore||"Scheda non trovata o non autorizzata.","error");
 return;
 }
 hide("firstSetup");
 show("main");
 coppia=data.coppia;
 stagioni=data.stagioni||[];
+// Recupera la gabbia salvata direttamente nella tabella coppie
+const {data:gabbiaData,error:gabbiaError}=await client
+.from("coppie")
+.select("gabbia")
+.eq("id",coppia.id)
+.maybeSingle();
+if(gabbiaError){
+message("globalMessage","Attenzione: impossibile leggere la gabbia della coppia. "+gabbiaError.message,"error");
+coppia.gabbia="";
+}else{
+coppia.gabbia=gabbiaData?.gabbia||"";
+}
+$("pairCage").value=valore(coppia.gabbia);
+message("cageMessage","");
 $("pairTitle").textContent="Coppia "+(coppia.codice||"");
 $("pairCode").textContent="Codice identificativo: "+coppia.id;
 $("seasonSelect").replaceChildren();
@@ -412,50 +452,34 @@ message("newCovataMessage","Seleziona una stagione.","error");
 return;
 }
 const numero=Number($("newNumero").value);
-const gabbia=$("newGabbia").value.trim();
 const dataDeposizione=$("newData").value;
+const gabbiaCoppia=valore(coppia?.gabbia).trim();
 if(!Number.isInteger(numero)||numero<1){
 message("newCovataMessage","Inserisci un numero covata valido.","error");
 return;
 }
-if(!stagioneSelezionata.maschio_anello||
-!stagioneSelezionata.femmina_anello){
-message(
-"newCovataMessage",
-"Prima di creare una covata devi assegnare sia il maschio sia la femmina alla stagione.",
-"error"
-);
+if(!stagioneSelezionata.maschio_anello||!stagioneSelezionata.femmina_anello){
+message("newCovataMessage","Prima di creare una covata devi assegnare sia il maschio sia la femmina alla stagione.","error");
 return;
 }
-if(stagioneSelezionata.covate?.some(c=>
-Number(c.numero)===numero
-)){
-message(
-"newCovataMessage",
-"Questo numero di covata esiste già nella stagione.",
-"error"
-);
+if(stagioneSelezionata.covate?.some(c=>Number(c.numero)===numero)){
+message("newCovataMessage","Questo numero di covata esiste già nella stagione.","error");
 return;
 }
-if(dataDeposizione&&
-Number(dataDeposizione.slice(0,4))!==Number(stagioneSelezionata.anno)){
-message(
-"newCovataMessage",
-"La data di deposizione deve appartenere all'anno selezionato.",
-"error"
-);
+if(dataDeposizione&&Number(dataDeposizione.slice(0,4))!==Number(stagioneSelezionata.anno)){
+message("newCovataMessage","La data di deposizione deve appartenere all'anno selezionato.","error");
 return;
 }
 const button=$("newCovataButton");
 button.disabled=true;
 button.textContent="Creazione in corso...";
-message("newCovataMessage","Creazione della covata e salvataggio dei genitori...");
+message("newCovataMessage","Creazione della covata e salvataggio dei genitori e della gabbia...");
 const stagioneId=stagioneSelezionata.id;
 const {data:result,error}=await client.rpc("crea_covata_per_coppia",{
 p_coppia_id:coppia.id,
 p_anno_id:stagioneId,
 p_numero:numero,
-p_gabbia:gabbia||null,
+p_gabbia:gabbiaCoppia||null,
 p_data_deposizione:dataDeposizione||null
 });
 button.disabled=false;
@@ -465,19 +489,11 @@ message("newCovataMessage","Errore: "+error.message,"error");
 return;
 }
 if(!result||result.successo!==true){
-message(
-"newCovataMessage",
-result?.errore||"Impossibile creare la covata.",
-"error"
-);
+message("newCovataMessage",result?.errore||"Impossibile creare la covata.","error");
 return;
 }
 $("newCovataForm").reset();
-message(
-"newCovataMessage",
-"Covata creata correttamente. Genitori storici salvati.",
-"success"
-);
+message("newCovataMessage","Covata creata correttamente. Genitori storici e gabbia salvati.","success");
 await loadSheet(stagioneId);
 });
 // --------------------------------------------------

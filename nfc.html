@@ -113,6 +113,29 @@
             font-size: 14px;
             line-height: 1.5;
         }
+        .card-status {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 6px;
+            background: #e5f5eb;
+            color: #176b36;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .card-status.inactive {
+            background: #fdeaea;
+            color: #a32626;
+        }
+        .email-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .email-actions input {
+            flex: 1;
+            min-width: 220px;
+        }
     </style>
 </head>
 <body>
@@ -121,7 +144,7 @@
         <h1>ALLEVANDO Smart Breeding™</h1>
         <h2>Programmazione Smart Card NFC</h2>
         <p class="muted">
-            Creazione e assegnazione delle Smart Card agli account
+            Creazione, assegnazione e consultazione delle Smart Card
             degli allevatori.
         </p>
     </div>
@@ -132,23 +155,19 @@
             <input type="email" id="email" required>
             <label for="password">Password</label>
             <input type="password" id="password" required>
-            <button type="submit" id="loginButton">
-                Accedi
-            </button>
+            <button type="submit" id="loginButton">Accedi</button>
         </form>
         <div id="loginMessage" class="status hidden"></div>
     </div>
     <div id="appPanel" class="hidden">
         <div class="panel">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-                <h2>Assegna Smart Card all'allevatore</h2>
-                <button class="secondary" id="logoutButton">
-                    Esci
-                </button>
+                <h2>Gestione Smart Card allevatore</h2>
+                <button class="secondary" id="logoutButton">Esci</button>
             </div>
             <p>
-                Inserisci l'indirizzo email dell'allevatore e il numero
-                di Smart Card da assegnargli.
+                Inserisci l'email dell'allevatore per visualizzare tutte
+                le Smart Card già assegnate. Potrai anche crearne altre.
             </p>
             <div class="form-note">
                 Le card vengono assegnate all'account dell'allevatore,
@@ -156,16 +175,32 @@
                 La coppia verrà configurata dall'allevatore alla prima
                 scansione della Smart Card.
             </div>
-            <form id="assignForm">
-                <label for="breederEmail">
-                    Email dell'allevatore
-                </label>
+            <label for="breederEmail">Email dell'allevatore</label>
+            <div class="email-actions">
                 <input
                     type="email"
                     id="breederEmail"
                     placeholder="nome@email.it"
-                    required
                 >
+                <button type="button" id="loadCardsButton">
+                    Carica Smart Card
+                </button>
+            </div>
+            <div id="loadMessage" class="status hidden"></div>
+            <div id="existingCardsPanel" class="hidden">
+                <h2>Smart Card già assegnate</h2>
+                <div id="existingSummary" class="status"></div>
+                <div class="actions">
+                    <button type="button" id="copyAllButton">
+                        Copia tutti i collegamenti
+                    </button>
+                </div>
+                <div id="generatedCards"></div>
+            </div>
+        </div>
+        <div class="panel">
+            <h2>Crea nuove Smart Card</h2>
+            <form id="assignForm">
                 <label for="quantity">
                     Numero di Smart Card da creare
                 </label>
@@ -186,23 +221,6 @@
                 <p id="progressText" class="muted"></p>
             </div>
         </div>
-        <div class="panel hidden" id="resultPanel">
-            <h2>Smart Card generate</h2>
-            <p class="muted">
-                Ogni card ha un codice univoco e un collegamento
-                personale da programmare sul relativo supporto NFC.
-            </p>
-            <div id="resultSummary" class="status success"></div>
-            <div class="actions">
-                <button id="copyAllButton">
-                    Copia tutti i collegamenti
-                </button>
-                <button class="secondary" id="newGenerationButton">
-                    Nuova assegnazione
-                </button>
-            </div>
-            <div id="generatedCards"></div>
-        </div>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -214,12 +232,15 @@ const loginPanel = document.getElementById("loginPanel");
 const appPanel = document.getElementById("appPanel");
 const loginMessage = document.getElementById("loginMessage");
 const assignMessage = document.getElementById("assignMessage");
-const resultPanel = document.getElementById("resultPanel");
-const resultSummary = document.getElementById("resultSummary");
+const loadMessage = document.getElementById("loadMessage");
+const existingCardsPanel = document.getElementById("existingCardsPanel");
+const existingSummary = document.getElementById("existingSummary");
 const generatedCards = document.getElementById("generatedCards");
 const progressPanel = document.getElementById("progressPanel");
 const progressText = document.getElementById("progressText");
 let createdCards = [];
+let currentEmail = "";
+let loadingCards = false;
 function showMessage(element, message, type = "") {
     element.textContent = message;
     element.className = "status " + type;
@@ -228,10 +249,15 @@ function showMessage(element, message, type = "") {
 function hideMessage(element) {
     element.classList.add("hidden");
 }
+function normalizeEmail(email) {
+    return (email || "").trim().toLowerCase();
+}
+function validEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 async function showApp() {
     loginPanel.classList.add("hidden");
     appPanel.classList.remove("hidden");
-    resultPanel.classList.add("hidden");
 }
 async function checkSession() {
     const { data, error } = await client.auth.getSession();
@@ -272,11 +298,17 @@ document.getElementById("loginForm").addEventListener("submit", async event => {
 });
 document.getElementById("logoutButton").addEventListener("click", async () => {
     await client.auth.signOut();
-    createdCards = [];
-    resultPanel.classList.add("hidden");
+    clearCards();
     appPanel.classList.add("hidden");
     loginPanel.classList.remove("hidden");
 });
+function clearCards() {
+    createdCards = [];
+    currentEmail = "";
+    generatedCards.innerHTML = "";
+    existingCardsPanel.classList.add("hidden");
+    hideMessage(loadMessage);
+}
 function renderCards() {
     generatedCards.innerHTML = "";
     createdCards.forEach((cardData, index) => {
@@ -287,31 +319,51 @@ function renderCards() {
         title.textContent = "Smart Card n. " + (index + 1);
         const email = document.createElement("p");
         email.className = "muted";
-        email.textContent = "Allevatore: " + cardData.email;
+        email.textContent = "Allevatore: " + (cardData.email || currentEmail);
+        const status = document.createElement("span");
+        status.className = "card-status" + (cardData.attivo === false ? " inactive" : "");
+        status.textContent = cardData.attivo === false ? "Non attiva" : "Attiva";
         const codeLabel = document.createElement("p");
         codeLabel.textContent = "Codice univoco:";
         const code = document.createElement("div");
         code.className = "link";
-        code.textContent = cardData.codice;
+        code.textContent = cardData.codice || "Non disponibile";
         const linkLabel = document.createElement("p");
         linkLabel.textContent = "Collegamento da programmare:";
         const link = document.createElement("div");
         link.className = "link";
-        link.textContent = cardData.collegamento;
+        link.textContent = cardData.collegamento || "Collegamento non disponibile";
+        const date = document.createElement("p");
+        date.className = "muted";
+        if (cardData.created_at) {
+            const parsedDate = new Date(cardData.created_at);
+            date.textContent = "Creata il: " +
+                (Number.isNaN(parsedDate.getTime())
+                    ? cardData.created_at
+                    : parsedDate.toLocaleString("it-IT"));
+        }
         const copyButton = document.createElement("button");
         copyButton.textContent = "Copia collegamento";
+        copyButton.disabled = !cardData.collegamento;
         copyButton.addEventListener("click", async () => {
             await copyText(cardData.collegamento);
         });
         card.appendChild(title);
         card.appendChild(email);
+        card.appendChild(status);
         card.appendChild(codeLabel);
         card.appendChild(code);
         card.appendChild(linkLabel);
         card.appendChild(link);
+        if (cardData.created_at) {
+            card.appendChild(date);
+        }
         card.appendChild(copyButton);
         generatedCards.appendChild(card);
     });
+    existingSummary.textContent =
+        "Smart Card trovate per " + currentEmail + ": " +
+        createdCards.length + ".";
 }
 async function copyText(text) {
     try {
@@ -323,13 +375,110 @@ async function copyText(text) {
         );
     }
 }
+async function loadExistingCards(email, options = {}) {
+    const normalized = normalizeEmail(email);
+    if (!validEmail(normalized)) {
+        if (!options.silent) {
+            showMessage(
+                loadMessage,
+                "Inserisci un indirizzo email valido.",
+                "error"
+            );
+        }
+        return false;
+    }
+    if (loadingCards) return false;
+    loadingCards = true;
+    const loadButton = document.getElementById("loadCardsButton");
+    loadButton.disabled = true;
+    loadButton.textContent = "Caricamento...";
+    hideMessage(loadMessage);
+    const { data, error } = await client.rpc(
+        "lista_smart_card_allevatore",
+        { p_email: normalized }
+    );
+    loadingCards = false;
+    loadButton.disabled = false;
+    loadButton.textContent = "Carica Smart Card";
+    if (error) {
+        if (!options.silent) {
+            showMessage(
+                loadMessage,
+                "Errore durante il recupero delle Smart Card: " + error.message,
+                "error"
+            );
+        }
+        return false;
+    }
+    if (!data || data.successo !== true || !Array.isArray(data.cards)) {
+        showMessage(
+            loadMessage,
+            "Il database non ha restituito un elenco valido di Smart Card.",
+            "error"
+        );
+        return false;
+    }
+    currentEmail = normalized;
+    createdCards = data.cards.map(card => ({
+        codice: card.codice,
+        collegamento: card.collegamento,
+        email: data.email || normalized,
+        tag_id: card.tag_id,
+        tipo: card.tipo,
+        attivo: card.attivo,
+        coppia_id: card.coppia_id,
+        created_at: card.created_at
+    }));
+    existingCardsPanel.classList.remove("hidden");
+    renderCards();
+    if (createdCards.length === 0) {
+        showMessage(
+            loadMessage,
+            "Nessuna Smart Card risulta ancora assegnata a questo account.",
+            "success"
+        );
+    } else {
+        showMessage(
+            loadMessage,
+            "Recuperate correttamente " + createdCards.length +
+            " Smart Card dal database.",
+            "success"
+        );
+    }
+    return true;
+}
+document.getElementById("loadCardsButton").addEventListener("click", async () => {
+    const email = document.getElementById("breederEmail").value;
+    await loadExistingCards(email);
+});
+document.getElementById("breederEmail").addEventListener("change", async event => {
+    const email = normalizeEmail(event.target.value);
+    if (!email) {
+        clearCards();
+        return;
+    }
+    await loadExistingCards(email, { silent: false });
+});
+document.getElementById("breederEmail").addEventListener("blur", async event => {
+    const email = normalizeEmail(event.target.value);
+    if (!email || !validEmail(email) || email === currentEmail) {
+        return;
+    }
+    await loadExistingCards(email, { silent: true });
+});
 document.getElementById("assignForm").addEventListener("submit", async event => {
     event.preventDefault();
     const button = document.getElementById("generateButton");
-    const email = document.getElementById("breederEmail").value.trim();
+    const email = normalizeEmail(
+        document.getElementById("breederEmail").value
+    );
     const quantity = Number(document.getElementById("quantity").value);
-    if (!email) {
-        showMessage(assignMessage, "Inserisci l'email dell'allevatore.", "error");
+    if (!validEmail(email)) {
+        showMessage(
+            assignMessage,
+            "Inserisci un'email valida per l'allevatore.",
+            "error"
+        );
         return;
     }
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
@@ -342,25 +491,39 @@ document.getElementById("assignForm").addEventListener("submit", async event => 
     }
     const confirmed = confirm(
         "Confermi la creazione di " + quantity +
-        " Smart Card NFC per l'account " + email + "?"
+        " nuove Smart Card NFC per l'account " + email + "?"
     );
     if (!confirmed) return;
-    createdCards = [];
-    generatedCards.innerHTML = "";
-    resultPanel.classList.add("hidden");
     hideMessage(assignMessage);
     button.disabled = true;
     button.textContent = "Creazione in corso...";
+    const loaded = await loadExistingCards(email);
+    if (!loaded) {
+        button.disabled = false;
+        button.textContent = "Crea e assegna Smart Card";
+        showMessage(
+            assignMessage,
+            "Non è stato possibile verificare le card già assegnate. " +
+            "Per sicurezza, la generazione è stata interrotta.",
+            "error"
+        );
+        return;
+    }
     progressPanel.classList.remove("hidden");
     let failed = false;
     let errorMessage = "";
+    let generatedCount = 0;
     for (let i = 0; i < quantity; i++) {
         progressText.textContent =
-            "Creazione Smart Card " + (i + 1) + " di " + quantity + "...";
-        const { data, error } = await client.rpc("assegna_tag_allevatore", {
-            p_email: email,
-            p_tipo: "NFC"
-        });
+            "Creazione nuova Smart Card " + (i + 1) +
+            " di " + quantity + "...";
+        const { data, error } = await client.rpc(
+            "assegna_tag_allevatore",
+            {
+                p_email: email,
+                p_tipo: "NFC"
+            }
+        );
         if (error) {
             failed = true;
             errorMessage = error.message;
@@ -377,75 +540,59 @@ document.getElementById("assignForm").addEventListener("submit", async event => 
                 "La funzione non ha restituito tutti i dati della Smart Card.";
             break;
         }
-        createdCards.push({
+        const newCard = {
             codice: data.codice,
             collegamento: data.collegamento,
             email: data.email || email,
             user_id: data.user_id,
-            tag_id: data.tag_id
-        });
+            tag_id: data.tag_id,
+            attivo: true,
+            created_at: new Date().toISOString()
+        };
+        createdCards.push(newCard);
+        generatedCount++;
         renderCards();
     }
+    progressPanel.classList.add("hidden");
     button.disabled = false;
     button.textContent = "Crea e assegna Smart Card";
-    progressPanel.classList.add("hidden");
-    if (createdCards.length > 0) {
-        resultPanel.classList.remove("hidden");
-        resultSummary.textContent =
-            "Smart Card create correttamente: " +
-            createdCards.length +
-            " su " + quantity + ".";
-        renderCards();
-        resultPanel.scrollIntoView({
-            behavior: "smooth"
-        });
-    }
+    existingCardsPanel.classList.remove("hidden");
+    renderCards();
     if (failed) {
         showMessage(
             assignMessage,
-            "Operazione interrotta dopo " +
-            createdCards.length +
-            " card create. Errore: " + errorMessage +
-            (createdCards.length > 0
-                ? " Le card già create sono visualizzate qui sotto e restano assegnate."
-                : ""),
+            "Operazione interrotta dopo " + generatedCount +
+            " nuove card create. Errore: " + errorMessage +
+            ". Le card già create restano salvate nel database.",
             "error"
         );
     } else {
         showMessage(
             assignMessage,
-            "Operazione completata. Tutte le " +
-            createdCards.length +
-            " Smart Card sono state assegnate all'account indicato.",
+            "Operazione completata. Create " + generatedCount +
+            " nuove Smart Card. Totale card associate all'account: " +
+            createdCards.length + ".",
             "success"
         );
     }
+    existingCardsPanel.scrollIntoView({ behavior: "smooth" });
 });
 document.getElementById("copyAllButton").addEventListener("click", async () => {
-    if (createdCards.length === 0) return;
     const allLinks = createdCards
+        .filter(card => card.collegamento)
         .map(card => card.collegamento)
         .join("\n");
+    if (!allLinks) {
+        alert("Non ci sono collegamenti da copiare.");
+        return;
+    }
     await copyText(allLinks);
-});
-document.getElementById("newGenerationButton").addEventListener("click", () => {
-    createdCards = [];
-    generatedCards.innerHTML = "";
-    resultPanel.classList.add("hidden");
-    document.getElementById("breederEmail").value = "";
-    document.getElementById("quantity").value = "1";
-    hideMessage(assignMessage);
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
 });
 client.auth.onAuthStateChange(event => {
     if (event === "SIGNED_OUT") {
+        clearCards();
         loginPanel.classList.remove("hidden");
         appPanel.classList.add("hidden");
-        resultPanel.classList.add("hidden");
-        createdCards = [];
     }
 });
 checkSession();

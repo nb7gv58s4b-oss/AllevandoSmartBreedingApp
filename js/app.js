@@ -1,4 +1,4 @@
- const client = window.supabaseClient;
+const client = window.supabaseClient;
 
 const loginForm = document.getElementById("login-form");
 const loginArea = document.getElementById("login-area");
@@ -241,31 +241,18 @@ async function caricaAnniDashboard() {
 
     if (error) {
         console.error("Errore caricamento anni:", error);
-
-        annoDashboard.replaceChildren();
-
-        const opzione = document.createElement("option");
-        opzione.value = String(new Date().getFullYear());
-        opzione.textContent = String(new Date().getFullYear());
-
-        annoDashboard.appendChild(opzione);
-
-        annoSelezionato = Number(opzione.value);
-
-        return;
     }
 
-    const anni = [...new Set(
-        (data || []).map(item => Number(item.anno))
-    )]
-        .filter(Number.isFinite)
-        .sort((a, b) => b - a);
+    const anniPresenti = (data || [])
+        .map(item => Number(item.anno))
+        .filter(anno => Number.isInteger(anno) && anno > 0);
+
+    const anni = [...new Set([
+        ...Array.from({ length: 10 }, (_, indice) => 2026 + indice),
+        ...anniPresenti
+    ])].sort((a, b) => b - a);
 
     const annoCorrente = new Date().getFullYear();
-
-    if (!anni.includes(annoCorrente) && anni.length === 0) {
-        anni.push(annoCorrente);
-    }
 
     annoDashboard.replaceChildren();
 
@@ -280,10 +267,8 @@ async function caricaAnniDashboard() {
 
     if (anni.includes(annoCorrente)) {
         annoSelezionato = annoCorrente;
-    } else if (anni.length > 0) {
-        annoSelezionato = anni[0];
     } else {
-        annoSelezionato = annoCorrente;
+        annoSelezionato = anni[0];
     }
 
     annoDashboard.value = String(annoSelezionato);

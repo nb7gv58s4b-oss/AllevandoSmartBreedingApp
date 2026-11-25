@@ -140,12 +140,12 @@ button.secondary{background:#64756a}
 
 <div>
 <label>Uova deposte (totale)</label>
-<input id="uova_deposte" type="number" min="0">
+<input id="uova_deposte" type="number" min="0" step="1">
 </div>
 
 <div>
 <label>Uova feconde (calcolo automatico)</label>
-<input id="uova_feconde" type="number" min="0" readonly>
+<input id="uova_feconde" type="number" min="0" step="1" readonly>
 </div>
 
 <div>
@@ -325,7 +325,7 @@ const ESITI=[
  "Pullo morto nell'uovo"
 ];
 
-const ESITI_FEcondi=[
+const ESITI_FECONDI=[
  "Fecondo",
  "Schiuso",
  "Non schiuso",
@@ -381,7 +381,13 @@ function makeField(labelText,id,type,value,options){
  return {wrap,input};
 }
 
-/* RIEPILOGO AUTOMATICO */
+/* CALCOLO CONTATORI */
+
+function calcolaUovaFeconde(){
+ return uova.filter(u=>
+  ESITI_FECONDI.includes(u.esito_speratura||"Da verificare")
+ ).length;
+}
 
 function setStats(){
 
@@ -389,9 +395,7 @@ function setStats(){
   (u.esito_speratura||"Da verificare")===status
  ).length;
 
- const fertile=uova.filter(u=>
-  ESITI_FEcondi.includes(u.esito_speratura||"Da verificare")
- ).length;
+ const fertile=calcolaUovaFeconde();
 
  const weaned=pulli.filter(p=>
   !!p.data_svezzamento
@@ -701,7 +705,7 @@ function renderChicks(){
  renderChickCards();
 }
 
-/* CARICAMENTO DATI */
+/* CARICAMENTO E AGGIORNAMENTO DATI */
 
 async function refreshData(){
 
@@ -1055,6 +1059,19 @@ $("covataForm").addEventListener("submit",async e=>{
 
  try{
 
+  const uovaDeposte=n("uova_deposte");
+
+  if(
+   uovaDeposte!==null&&
+   (!Number.isInteger(uovaDeposte)||uovaDeposte<0)
+  ){
+   throw new Error(
+    "Il totale delle uova deposte deve essere un numero intero maggiore o uguale a zero."
+   );
+  }
+
+  const uovaFecondeCalcolate=calcolaUovaFeconde();
+
   const {data,error}=await client.rpc(
    "salva_covata_da_tag",
    {
@@ -1065,8 +1082,8 @@ $("covataForm").addEventListener("submit",async e=>{
     p_data_inizio_cova:d("data_inizio_cova"),
     p_data_speratura_prevista:d("data_speratura_prevista"),
     p_data_speratura_effettiva:d("data_speratura_effettiva"),
-    p_uova_deposte:n("uova_deposte"),
-    p_uova_feconde:n("uova_feconde"),
+    p_uova_deposte:uovaDeposte,
+    p_uova_feconde:uovaFecondeCalcolate,
     p_data_schiusa_prevista:d("data_schiusa_prevista"),
     p_data_schiusa_effettiva:d("data_schiusa_effettiva"),
     p_note:$("note").value||null,

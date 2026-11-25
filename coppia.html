@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -6,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ALLEVANDO - Gestione coppia</title>
 <link rel="stylesheet" href="./css/style.css">
-
 <style>
 body{margin:0;background:#f3f5f2;font-family:Arial,sans-serif;color:#26352c}
 .page{max-width:950px;margin:auto;padding:16px}
@@ -14,9 +12,10 @@ body{margin:0;background:#f3f5f2;font-family:Arial,sans-serif;color:#26352c}
 h1,h2,h3{color:#285b3d}
 input,textarea,select{box-sizing:border-box;width:100%;padding:12px;margin:6px 0 14px;border:1px solid #ccd5ce;border-radius:8px;font-size:16px}
 label{font-weight:600;font-size:14px}
-button{background:#285b3d;color:white;border:0;border-radius:8px;padding:13px 18px;font-size:15px;font-weight:bold;cursor:pointer}
+button{background:#285b3d;color:white;border:0;border-radius:8px;padding:11px 15px;font-size:14px;font-weight:bold;cursor:pointer}
 button:disabled{opacity:.5}
 .secondary{background:#64756a}
+.danger{background:#a83232}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .muted{color:#68776d;font-size:14px}
 .error{color:#b42318}
@@ -27,7 +26,7 @@ button:disabled{opacity:.5}
 .seasonHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .covataCard{border:1px solid #e0e8e2;border-radius:10px;padding:15px;margin:12px 0}
 .covataCard h3{margin-top:0}
-.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .small{font-size:13px}
 .table-responsive{overflow-x:auto;width:100%}
 .archive-table{width:100%;border-collapse:collapse;font-size:14px}
@@ -36,6 +35,9 @@ button:disabled{opacity:.5}
 .status-available{color:#168044;font-weight:bold}
 .status-unavailable{color:#b42318;font-weight:bold}
 .archive-table select{min-width:130px;margin:0}
+.edit-box{background:#f5f8f5;padding:14px;border-radius:10px;min-width:260px}
+.edit-box input,.edit-box textarea{margin-bottom:8px}
+.locked-note{font-size:12px;color:#68776d}
 @media(max-width:550px){
 .grid{grid-template-columns:1fr}
 .page{padding:10px}
@@ -43,16 +45,13 @@ button:disabled{opacity:.5}
 }
 </style>
 </head>
-
 <body>
 <div class="page">
-
 <header class="panel">
 <h1>ALLEVANDO Smart Breeding™</h1>
 <p class="muted">Gestione digitale della coppia</p>
 <button type="button" class="secondary" onclick="location.href='./index.html'">Torna alla dashboard</button>
 </header>
-
 <section id="login" class="panel hidden">
 <h2>Accedi al tuo allevamento</h2>
 <p class="muted">Accedi con il tuo account per aprire la scheda della coppia.</p>
@@ -65,15 +64,12 @@ button:disabled{opacity:.5}
 </form>
 <p id="loginMessage" class="error"></p>
 </section>
-
 <section id="main" class="hidden">
-
 <div class="panel">
 <h2 id="pairTitle">Coppia</h2>
 <p id="pairCode" class="muted"></p>
 <p class="muted">Questa scheda NFC è associata stabilmente a questa coppia.</p>
 </div>
-
 <!-- ARCHIVIO RIPRODUTTORI -->
 <div class="panel">
 <h2>Archivio riproduttori</h2>
@@ -81,16 +77,13 @@ button:disabled{opacity:.5}
 Registra qui ogni soggetto una sola volta. I soggetti venduti o deceduti
 rimangono nello storico, ma non possono essere assegnati a nuove stagioni.
 </p>
-
 <form id="newBreederForm">
 <h3>Registra nuovo riproduttore</h3>
-
 <div class="grid">
 <div>
 <label>Anello</label>
 <input id="newBreederRing" required>
 </div>
-
 <div>
 <label>Sesso</label>
 <select id="newBreederSex" required>
@@ -99,32 +92,25 @@ rimangono nello storico, ma non possono essere assegnati a nuove stagioni.
 <option value="Femmina">Femmina</option>
 </select>
 </div>
-
 <div>
 <label>Mutazione</label>
 <input id="newBreederMutation">
 </div>
-
 <div>
 <label>Origine</label>
 <input id="newBreederOrigin" placeholder="Nato in allevamento, acquistato...">
 </div>
 </div>
-
 <label>Note</label>
 <textarea id="newBreederNotes" rows="2"></textarea>
-
 <button id="newBreederButton" type="submit">Registra riproduttore</button>
 <p id="newBreederMessage"></p>
 </form>
-
 <hr>
-
 <h3>Soggetti registrati</h3>
 <p id="breederCount" class="muted"></p>
 <div id="breederArchive" class="muted">Caricamento archivio...</div>
 </div>
-
 <!-- STAGIONE -->
 <div class="panel">
 <div class="seasonHeader">
@@ -133,7 +119,6 @@ rimangono nello storico, ma non possono essere assegnati a nuove stagioni.
 </div>
 <p id="seasonMessage" class="muted"></p>
 </div>
-
 <!-- RIPRODUTTORI DELLA STAGIONE -->
 <div class="panel">
 <h2>Riproduttori della stagione</h2>
@@ -141,7 +126,6 @@ rimangono nello storico, ma non possono essere assegnati a nuove stagioni.
 Seleziona i soggetti dall'archivio. Le stagioni precedenti non verranno modificate.
 I soggetti non disponibili già associati a questa stagione possono rimanere nello storico.
 </p>
-
 <form id="breedersForm">
 <h3>Maschio</h3>
 <label>Seleziona maschio</label>
@@ -149,19 +133,16 @@ I soggetti non disponibili già associati a questa stagione possono rimanere nel
 <option value="">Nessun maschio selezionato</option>
 </select>
 <p id="maschioInfo" class="muted small"></p>
-
 <h3>Femmina</h3>
 <label>Seleziona femmina</label>
 <select id="femmina_anello">
 <option value="">Nessuna femmina selezionata</option>
 </select>
 <p id="femminaInfo" class="muted small"></p>
-
 <button id="breedersButton" type="submit">Salva riproduttori</button>
 <p id="breedersMessage"></p>
 </form>
 </div>
-
 <!-- NUOVA COVATA -->
 <div class="panel">
 <h2>Nuova covata</h2>
@@ -184,224 +165,278 @@ I soggetti non disponibili già associati a questa stagione possono rimanere nel
 <p id="newCovataMessage"></p>
 </form>
 </div>
-
 <div class="panel">
 <h2>Covate della stagione</h2>
 <div id="covateList" class="muted">Nessuna covata registrata.</div>
 </div>
-
 </section>
-
 <section id="loading" class="panel">
 <p>Caricamento della scheda...</p>
 </section>
-
 <p id="globalMessage" class="error"></p>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./js/config.js"></script>
 <script src="./js/supabase.js"></script>
-
 <script>
 (async function(){
-
 const client=window.supabaseClient;
 const params=new URLSearchParams(location.search);
 const codiceTag=params.get("tag");
 const $=id=>document.getElementById(id);
-
 let coppia=null;
 let stagioni=[];
 let stagioneSelezionata=null;
 let riproduttori=[];
-
 function message(id,text,cls=""){
 $(id).textContent=text;
 $(id).className=cls;
 }
-
 function show(id){$(id).classList.remove("hidden")}
 function hide(id){$(id).classList.add("hidden")}
-
 function valore(v){return v===null||v===undefined?"":v}
-
 function dataIt(v){
 if(!v)return "Non indicata";
 const p=v.split("-");
 return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:v;
 }
-
 // --------------------------------------------------
 // ARCHIVIO RIPRODUTTORI
 // --------------------------------------------------
-
 async function caricaArchivioRiproduttori(){
-
 $("breederArchive").textContent="Caricamento archivio...";
-
 const {data,error}=await client
 .from("riproduttori")
 .select("id,anello,sesso,mutazione,origine,stato,note,created_at")
 .order("anello",{ascending:true});
-
 if(error){
 $("breederArchive").textContent="Errore: "+error.message;
 console.error("Errore archivio riproduttori:",error);
 return;
 }
-
 riproduttori=data||[];
-
 renderArchivioRiproduttori();
 aggiornaSelettoriRiproduttori();
 }
-
 function renderArchivioRiproduttori(){
-
 const area=$("breederArchive");
 area.replaceChildren();
-
 $("breederCount").textContent=
 riproduttori.length+
 (riproduttori.length===1?" riproduttore registrato":" riproduttori registrati");
-
 if(riproduttori.length===0){
 area.textContent="Non hai ancora registrato riproduttori.";
 return;
 }
-
 const wrapper=document.createElement("div");
 wrapper.className="table-responsive";
-
 const table=document.createElement("table");
 table.className="archive-table";
-
 const thead=document.createElement("thead");
 const headRow=document.createElement("tr");
-
-["Anello","Sesso","Mutazione","Origine","Stato","Azione"].forEach(t=>{
+["Anello","Sesso","Mutazione","Origine","Stato","Azioni"].forEach(t=>{
 const th=document.createElement("th");
 th.textContent=t;
 headRow.appendChild(th);
 });
-
 thead.appendChild(headRow);
-
 const tbody=document.createElement("tbody");
-
 riproduttori.forEach(soggetto=>{
-
 const row=document.createElement("tr");
-
 function cell(text){
 const td=document.createElement("td");
 td.textContent=text||"—";
 row.appendChild(td);
 return td;
 }
-
 cell(soggetto.anello);
 cell(soggetto.sesso);
 cell(soggetto.mutazione);
 cell(soggetto.origine);
-
 const statusCell=cell(soggetto.stato);
 statusCell.className=
 soggetto.stato==="Disponibile"
 ?"status-available":"status-unavailable";
-
 const actionCell=document.createElement("td");
-
+const actions=document.createElement("div");
+actions.className="actions";
+const editButton=document.createElement("button");
+editButton.type="button";
+editButton.textContent="Modifica";
+editButton.className="secondary";
+editButton.addEventListener("click",()=>{
+apriModificaSoggetto(soggetto);
+});
 const statusSelect=document.createElement("select");
-
 ["Disponibile","Venduto","Deceduto"].forEach(stato=>{
 const option=document.createElement("option");
 option.value=stato;
 option.textContent=stato;
 statusSelect.appendChild(option);
 });
-
 statusSelect.value=soggetto.stato;
-
 const saveButton=document.createElement("button");
 saveButton.type="button";
-saveButton.textContent="Aggiorna";
+saveButton.textContent="Aggiorna stato";
 saveButton.className="secondary";
-
 saveButton.addEventListener("click",async()=>{
-
 const nuovoStato=statusSelect.value;
-
 if(nuovoStato===soggetto.stato)return;
-
-saveButton.disabled=true;
-saveButton.textContent="Salvataggio...";
-
-const {error}=await client
-.from("riproduttori")
-.update({stato:nuovoStato})
-.eq("id",soggetto.id);
-
-saveButton.disabled=false;
-saveButton.textContent="Aggiorna";
-
-if(error){
-alert("Errore aggiornamento stato: "+error.message);
+if(!confirm("Confermi di voler cambiare lo stato di questo riproduttore?")){
+statusSelect.value=soggetto.stato;
 return;
 }
-
-soggetto.stato=nuovoStato;
-
+saveButton.disabled=true;
+statusSelect.disabled=true;
+saveButton.textContent="Salvataggio...";
+const {data,error}=await client
+.from("riproduttori")
+.update({stato:nuovoStato})
+.eq("id",soggetto.id)
+.select("id,stato")
+.maybeSingle();
+saveButton.disabled=false;
+statusSelect.disabled=false;
+saveButton.textContent="Aggiorna stato";
+if(error){
+alert("Errore aggiornamento stato: "+error.message);
+statusSelect.value=soggetto.stato;
+return;
+}
+if(!data){
+alert("Nessuna modifica effettuata. Verifica i permessi del tuo account.");
+statusSelect.value=soggetto.stato;
+return;
+}
+soggetto.stato=data.stato;
 renderArchivioRiproduttori();
 aggiornaSelettoriRiproduttori();
-
 });
-
-actionCell.append(statusSelect,saveButton);
+actions.append(editButton);
+actions.append(statusSelect);
+actions.append(saveButton);
+actionCell.appendChild(actions);
 row.appendChild(actionCell);
 tbody.appendChild(row);
-
 });
-
 table.append(thead,tbody);
 wrapper.appendChild(table);
 area.appendChild(wrapper);
 }
-
+// --------------------------------------------------
+// MODIFICA DATI RIPRODUTTORE
+// --------------------------------------------------
+function apriModificaSoggetto(soggetto){
+const area=$("breederArchive");
+area.replaceChildren();
+const box=document.createElement("div");
+box.className="edit-box";
+const title=document.createElement("h3");
+title.textContent="Modifica riproduttore";
+box.appendChild(title);
+function creaCampo(etichetta,valoreIniziale,tag="input"){
+const label=document.createElement("label");
+label.textContent=etichetta;
+box.appendChild(label);
+const campo=document.createElement(tag);
+if(tag==="textarea"){
+campo.rows=3;
+}
+campo.value=valore(valoreIniziale);
+box.appendChild(campo);
+return campo;
+}
+// L'anello e il sesso non sono modificabili dopo la registrazione.
+// Questo protegge i collegamenti con le stagioni storiche.
+const anello=creaCampo("Anello",soggetto.anello);
+anello.disabled=true;
+const sesso=creaCampo("Sesso",soggetto.sesso,"select");
+["Maschio","Femmina"].forEach(v=>{
+const option=document.createElement("option");
+option.value=v;
+option.textContent=v;
+sesso.appendChild(option);
+});
+sesso.value=soggetto.sesso;
+sesso.disabled=true;
+const info=document.createElement("p");
+info.className="locked-note";
+info.textContent="Anello e sesso sono bloccati per proteggere l'identità del soggetto e i collegamenti con le stagioni.";
+box.appendChild(info);
+const mutazione=creaCampo("Mutazione",soggetto.mutazione);
+const origine=creaCampo("Origine",soggetto.origine);
+const note=creaCampo("Note",soggetto.note,"textarea");
+const buttons=document.createElement("div");
+buttons.className="actions";
+const save=document.createElement("button");
+save.type="button";
+save.textContent="Salva modifiche";
+const cancel=document.createElement("button");
+cancel.type="button";
+cancel.className="secondary";
+cancel.textContent="Annulla";
+cancel.addEventListener("click",renderArchivioRiproduttori);
+save.addEventListener("click",async()=>{
+const nuovaMutazione=mutazione.value.trim();
+const nuovaOrigine=origine.value.trim();
+const nuoveNote=note.value.trim();
+save.disabled=true;
+save.textContent="Salvataggio...";
+const aggiornamento={
+mutazione:nuovaMutazione||null,
+origine:nuovaOrigine||null,
+note:nuoveNote||null
+};
+const {data,error}=await client
+.from("riproduttori")
+.update(aggiornamento)
+.eq("id",soggetto.id)
+.select("id,mutazione,origine,note")
+.maybeSingle();
+save.disabled=false;
+save.textContent="Salva modifiche";
+if(error){
+alert("Errore durante la modifica: "+error.message);
+return;
+}
+if(!data){
+alert("Nessuna modifica effettuata. Verifica i permessi del tuo account.");
+return;
+}
+soggetto.mutazione=data.mutazione;
+soggetto.origine=data.origine;
+soggetto.note=data.note;
+renderArchivioRiproduttori();
+aggiornaSelettoriRiproduttori();
+alert("Dati del riproduttore aggiornati correttamente.");
+});
+buttons.append(save,cancel);
+box.appendChild(buttons);
+area.appendChild(box);
+}
 // --------------------------------------------------
 // REGISTRAZIONE NUOVO RIPRODUTTORE
 // --------------------------------------------------
-
 $("newBreederForm").addEventListener("submit",async e=>{
-
 e.preventDefault();
-
 const anello=$("newBreederRing").value.trim();
 const sesso=$("newBreederSex").value;
 const mutazione=$("newBreederMutation").value.trim();
 const origine=$("newBreederOrigin").value.trim();
 const note=$("newBreederNotes").value.trim();
-
 if(!anello||!sesso){
 message("newBreederMessage","Inserisci anello e sesso.","error");
 return;
 }
-
 const button=$("newBreederButton");
 button.disabled=true;
 message("newBreederMessage","Registrazione in corso...");
-
-// Recupera l'utente autenticato
 const {data:userData,error:userError}=await client.auth.getUser();
-
 if(userError||!userData.user){
 button.disabled=false;
 message("newBreederMessage","Sessione non valida. Effettua nuovamente l'accesso.","error");
 return;
 }
-
-// Registra il soggetto associandolo al proprietario
 const {data,error}=await client
 .from("riproduttori")
 .insert({
@@ -415,9 +450,7 @@ stato:"Disponibile"
 })
 .select()
 .single();
-
 button.disabled=false;
-
 if(error){
 if(error.code==="23505"){
 message("newBreederMessage","Esiste già un riproduttore con questo anello nel tuo archivio.","error");
@@ -426,44 +459,30 @@ message("newBreederMessage","Errore: "+error.message,"error");
 }
 return;
 }
-
 $("newBreederForm").reset();
-
 message("newBreederMessage","Riproduttore registrato correttamente.","success");
-
 await caricaArchivioRiproduttori();
-
 });
-
 // --------------------------------------------------
 // SELETTORI RIPRODUTTORI
 // --------------------------------------------------
-
 function aggiornaSelettoriRiproduttori(){
-
 if(!stagioneSelezionata)return;
-
 const maschioAttuale=valore(stagioneSelezionata.maschio_anello);
 const femminaAttuale=valore(stagioneSelezionata.femmina_anello);
-
 popolaSelettore("maschio_anello","Maschio",maschioAttuale);
 popolaSelettore("femmina_anello","Femmina",femminaAttuale);
-
 aggiornaInfoRiproduttori();
 }
-
 function popolaSelettore(id,sesso,anelloAttuale){
-
 const select=$(id);
 select.replaceChildren();
-
 const empty=document.createElement("option");
 empty.value="";
 empty.textContent=sesso==="Maschio"
 ?"Nessun maschio selezionato"
 :"Nessuna femmina selezionata";
 select.appendChild(empty);
-
 const disponibili=riproduttori.filter(s=>
 s.sesso===sesso &&
 (
@@ -471,77 +490,54 @@ s.stato==="Disponibile" ||
 s.anello.toLowerCase()===anelloAttuale.toLowerCase()
 )
 );
-
 disponibili.forEach(soggetto=>{
-
 const option=document.createElement("option");
 option.value=soggetto.anello;
-
 option.textContent=
 soggetto.anello+
 (soggetto.mutazione?" · "+soggetto.mutazione:"")+
 (soggetto.stato!=="Disponibile"?" · "+soggetto.stato:"");
-
 select.appendChild(option);
-
 });
-
 select.value=anelloAttuale;
-
 if(select.value!==anelloAttuale){
 select.value="";
 }
-
 }
-
 function aggiornaInfoRiproduttori(){
-
 const maschio=riproduttori.find(s=>
 s.anello.toLowerCase()===$("maschio_anello").value.toLowerCase() &&
 s.sesso==="Maschio"
 );
-
 const femmina=riproduttori.find(s=>
 s.anello.toLowerCase()===$("femmina_anello").value.toLowerCase() &&
 s.sesso==="Femmina"
 );
-
 $("maschioInfo").textContent=maschio
 ?"Mutazione: "+(maschio.mutazione||"Non indicata")+" · Stato: "+maschio.stato
 :"";
-
 $("femminaInfo").textContent=femmina
 ?"Mutazione: "+(femmina.mutazione||"Non indicata")+" · Stato: "+femmina.stato
 :"";
-
 }
-
 $("maschio_anello").addEventListener("change",aggiornaInfoRiproduttori);
 $("femmina_anello").addEventListener("change",aggiornaInfoRiproduttori);
-
 // --------------------------------------------------
 // COVATE
 // --------------------------------------------------
-
 function renderCovate(){
-
 const area=$("covateList");
 area.replaceChildren();
-
 if(!stagioneSelezionata||!stagioneSelezionata.covate||!stagioneSelezionata.covate.length){
 area.textContent="Nessuna covata registrata per questa stagione.";
 return;
 }
-
 stagioneSelezionata.covate.forEach(c=>{
-
 const card=document.createElement("div");
 card.className="covataCard";
-
 const title=document.createElement("h3");
 title.textContent="Covata n. "+c.numero;
 card.appendChild(title);
-
 const info=document.createElement("p");
 info.className="muted";
 info.textContent=
@@ -549,143 +545,102 @@ info.textContent=
 " · Deposizione: "+dataIt(c.data_deposizione)+
 " · Stato: "+(c.stato||"Da definire");
 card.appendChild(info);
-
 const eggs=document.createElement("p");
 eggs.textContent="Uova: "+(c.uova?.length||0);
 card.appendChild(eggs);
-
 const chicks=document.createElement("p");
 chicks.textContent="Pulli: "+(c.pulli?.length||0);
 card.appendChild(chicks);
-
 const button=document.createElement("button");
 button.type="button";
 button.textContent="Apri covata";
-
 button.addEventListener("click",()=>{
 location.href="./covata.html?tag="+encodeURIComponent(codiceTag)+"&covata="+encodeURIComponent(c.id);
 });
-
 card.appendChild(button);
 area.appendChild(card);
-
 });
-
 }
-
 // --------------------------------------------------
 // STAGIONE
 // --------------------------------------------------
-
 function renderSeason(){
-
 stagioneSelezionata=stagioni.find(s=>s.id===$("seasonSelect").value)||null;
-
 if(!stagioneSelezionata)return;
-
 $("seasonMessage").textContent="Stagione riproduttiva "+stagioneSelezionata.anno;
-
 aggiornaSelettoriRiproduttori();
-
 message("breedersMessage","");
 renderCovate();
-
 }
-
 // --------------------------------------------------
 // CARICAMENTO SCHEDA
 // --------------------------------------------------
-
 async function loadSheet(){
-
 hide("loading");
 show("main");
-
 const {data,error}=await client.rpc("apri_coppia_da_tag",{
 p_codice:codiceTag
 });
-
 if(error){
 hide("main");
 message("globalMessage",error.message,"error");
 return;
 }
-
 if(!data||!data.successo||!data.coppia){
 hide("main");
 message("globalMessage",data?.errore||"Scheda non trovata o non autorizzata.","error");
 return;
 }
-
 coppia=data.coppia;
 stagioni=data.stagioni||[];
-
 $("pairTitle").textContent="Coppia "+(coppia.codice||"");
 $("pairCode").textContent="Codice identificativo: "+coppia.id;
-
 await caricaArchivioRiproduttori();
-
 $("seasonSelect").replaceChildren();
-
 if(stagioni.length===0){
 $("seasonMessage").textContent="Non ci sono ancora stagioni registrate.";
 hide("breedersForm");
 $("covateList").textContent="Registra il primo uovo o crea una stagione per iniziare.";
 return;
 }
-
 show("breedersForm");
-
 stagioni.forEach(s=>{
 const option=document.createElement("option");
 option.value=s.id;
 option.textContent=s.anno;
 $("seasonSelect").appendChild(option);
 });
-
 $("seasonSelect").value=stagioni[0].id;
 renderSeason();
-
 }
-
 $("seasonSelect").addEventListener("change",renderSeason);
-
 // --------------------------------------------------
 // SALVATAGGIO RIPRODUTTORI STAGIONE
 // --------------------------------------------------
-
 $("breedersForm").addEventListener("submit",async e=>{
-
 e.preventDefault();
 if(!stagioneSelezionata)return;
-
 const maschio=$("maschio_anello").value;
 const femmina=$("femmina_anello").value;
-
 const soggettoMaschio=riproduttori.find(s=>
 s.sesso==="Maschio" &&
 s.anello.toLowerCase()===maschio.toLowerCase()
 );
-
 const soggettoFemmina=riproduttori.find(s=>
 s.sesso==="Femmina" &&
 s.anello.toLowerCase()===femmina.toLowerCase()
 );
-
 if(maschio&&!soggettoMaschio){
 message("breedersMessage","Maschio non presente nell'archivio.","error");
 return;
 }
-
 if(femmina&&!soggettoFemmina){
 message("breedersMessage","Femmina non presente nell'archivio.","error");
 return;
 }
-
 const button=$("breedersButton");
 button.disabled=true;
 message("breedersMessage","Salvataggio in corso...");
-
 const {data,error}=await client.rpc("aggiorna_riproduttori_stagione",{
 p_anno_id:stagioneSelezionata.id,
 p_maschio_anello:maschio,
@@ -693,64 +648,48 @@ p_maschio_mutazione:soggettoMaschio?.mutazione||"",
 p_femmina_anello:femmina,
 p_femmina_mutazione:soggettoFemmina?.mutazione||""
 });
-
 button.disabled=false;
-
 if(error){
 message("breedersMessage","Errore: "+error.message,"error");
 return;
 }
-
 if(!data||data.successo!==true){
 message("breedersMessage",data?.errore||"Impossibile salvare i riproduttori.","error");
 return;
 }
-
 stagioneSelezionata.maschio_anello=maschio||null;
 stagioneSelezionata.maschio_mutazione=soggettoMaschio?.mutazione||null;
 stagioneSelezionata.femmina_anello=femmina||null;
 stagioneSelezionata.femmina_mutazione=soggettoFemmina?.mutazione||null;
-
 message("breedersMessage","Riproduttori salvati correttamente.","success");
-
 });
-
 // --------------------------------------------------
 // NUOVA COVATA
 // --------------------------------------------------
-
 $("newCovataForm").addEventListener("submit",async e=>{
-
 e.preventDefault();
-
 if(!stagioneSelezionata){
 message("newCovataMessage","Seleziona una stagione.","error");
 return;
 }
-
 const numero=Number($("newNumero").value);
 const gabbia=$("newGabbia").value.trim();
 const data=$("newData").value;
-
 if(!Number.isInteger(numero)||numero<1){
 message("newCovataMessage","Inserisci un numero covata valido.","error");
 return;
 }
-
 if(stagioneSelezionata.covate?.some(c=>Number(c.numero)===numero)){
 message("newCovataMessage","Questo numero di covata esiste già nella stagione.","error");
 return;
 }
-
 if(data&&Number(data.slice(0,4))!==Number(stagioneSelezionata.anno)){
 message("newCovataMessage","La data di deposizione deve appartenere all'anno selezionato.","error");
 return;
 }
-
 const button=$("newCovataButton");
 button.disabled=true;
 message("newCovataMessage","Creazione in corso...");
-
 const {data:result,error}=await client.rpc("crea_covata_per_coppia",{
 p_coppia_id:coppia.id,
 p_anno_id:stagioneSelezionata.id,
@@ -758,86 +697,63 @@ p_numero:numero,
 p_gabbia:gabbia||null,
 p_data_deposizione:data||null
 });
-
 button.disabled=false;
-
 if(error){
 message("newCovataMessage","Errore: "+error.message,"error");
 return;
 }
-
 if(!result||result.successo!==true){
 message("newCovataMessage",result?.errore||"Impossibile creare la covata.","error");
 return;
 }
-
 const stagioneId=stagioneSelezionata.id;
-
 message("newCovataMessage","Covata creata correttamente.","success");
 $("newCovataForm").reset();
-
 await loadSheet();
-
 $("seasonSelect").value=stagioneId;
 renderSeason();
-
 });
-
 // --------------------------------------------------
 // LOGIN
 // --------------------------------------------------
-
 $("loginForm").addEventListener("submit",async e=>{
-
 e.preventDefault();
 message("loginMessage","Accesso in corso...");
-
 const {error}=await client.auth.signInWithPassword({
 email:$("email").value.trim(),
 password:$("password").value
 });
-
 if(error){
 message("loginMessage",error.message,"error");
 return;
 }
-
 hide("login");
 await loadSheet();
-
 });
-
 // --------------------------------------------------
 // AVVIO
 // --------------------------------------------------
-
 if(!client){
 hide("loading");
 message("globalMessage","Connessione Supabase non inizializzata.","error");
 return;
 }
-
 if(!codiceTag){
 hide("loading");
 message("globalMessage","Codice NFC mancante nel collegamento.","error");
 return;
 }
-
 const {data:sessionData,error:sessionError}=await client.auth.getSession();
-
 hide("loading");
-
 if(sessionError){
 message("globalMessage",sessionError.message,"error");
 return;
 }
-
 if(!sessionData.session){
 show("login");
 }else{
 await loadSheet();
 }
-
 })();
 </script>
 </body>

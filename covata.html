@@ -33,9 +33,12 @@ button.secondary{background:#64756a}
 .status{display:inline-block;background:#edf3ee;color:#285b3d;padding:5px 9px;border-radius:20px;font-size:12px;font-weight:bold}
 .small{font-size:13px}
 .tableWrap{width:100%;overflow-x:auto;margin:12px 0}
-.chickTable{width:100%;border-collapse:collapse;font-size:13px;min-width:650px}
-.chickTable th,.chickTable td{padding:10px 8px;text-align:left;border-bottom:1px solid #e5eae6}
-.chickTable th{background:#f1f6f2;color:#285b3d}
+.chickTable,.eggTable{width:100%;border-collapse:collapse;font-size:13px;min-width:650px}
+.chickTable th,.chickTable td,.eggTable th,.eggTable td{padding:10px 8px;text-align:left;vertical-align:middle;border-bottom:1px solid #e5eae6}
+.chickTable th,.eggTable th{background:#f1f6f2;color:#285b3d}
+.eggTable input,.eggTable select,.eggTable textarea{min-width:125px;margin:0;padding:8px;font-size:13px}
+.eggTable textarea{min-height:38px;resize:vertical}
+.tableActionButton{padding:8px 10px;font-size:12px;white-space:nowrap}
 #toggleChickEdits{margin-top:12px}
 @media(max-width:550px){
  .grid{grid-template-columns:1fr}
@@ -78,6 +81,7 @@ button.secondary{background:#64756a}
 
 <div class="panel">
 <h2>Riepilogo della covata</h2>
+
 <div class="stats">
 <div class="stat"><strong id="statLaid">0</strong><span>Uova deposte</span></div>
 <div class="stat"><strong id="statEggs">0</strong><span>Uova registrate</span></div>
@@ -90,6 +94,7 @@ button.secondary{background:#64756a}
 <div class="stat"><strong id="statChicks">0</strong><span>Pulli nati / registrati</span></div>
 <div class="stat"><strong id="statWeaned">0</strong><span>Pulli svezzati</span></div>
 </div>
+
 <p id="aggregateInfo" class="muted"></p>
 </div>
 
@@ -99,7 +104,7 @@ button.secondary{background:#64756a}
 
 <div class="grid">
 <div>
-<label>Gabbia della coppia</label>
+<label>Gabbia (dalla scheda coppia)</label>
 <input id="gabbia" readonly>
 </div>
 
@@ -127,11 +132,11 @@ button.secondary{background:#64756a}
 
 <div>
 <label>Giorni per la speratura</label>
-<input id="giorni_speratura" type="number" min="0" step="1" placeholder="Es. 7">
+<input id="giorni_speratura" type="number" min="0" step="1" placeholder="Giorni dalla deposizione">
 </div>
 
 <div>
-<label>Speratura prevista</label>
+<label>Speratura prevista (calcolo automatico)</label>
 <input id="data_speratura_prevista" type="date" readonly>
 </div>
 
@@ -142,11 +147,11 @@ button.secondary{background:#64756a}
 
 <div>
 <label>Giorni per la schiusa</label>
-<input id="giorni_schiusa" type="number" min="0" step="1" placeholder="Es. 13">
+<input id="giorni_schiusa" type="number" min="0" step="1" placeholder="Giorni dalla deposizione">
 </div>
 
 <div>
-<label>Schiusa prevista</label>
+<label>Schiusa prevista (calcolo automatico)</label>
 <input id="data_schiusa_prevista" type="date" readonly>
 </div>
 
@@ -157,7 +162,7 @@ button.secondary{background:#64756a}
 
 <div>
 <label>Giorni per l'inanellamento</label>
-<input id="giorni_inanellamento" type="number" min="0" step="1" placeholder="Es. 6">
+<input id="giorni_inanellamento" type="number" min="0" step="1" placeholder="Giorni dalla nascita">
 </div>
 
 <div>
@@ -171,9 +176,7 @@ button.secondary{background:#64756a}
 </div>
 </div>
 
-<p class="muted">
-Le date previste vengono calcolate automaticamente in base alla data di deposizione e ai giorni impostati per questa covata. La data di inanellamento viene calcolata per ogni pullo in base alla sua data di nascita.
-</p>
+<p class="muted">I tre intervalli sono indipendenti e vengono memorizzati per questa singola covata. Le date previste si aggiornano automaticamente quando modifichi la data di deposizione o i giorni impostati.</p>
 
 <label>Note della covata</label>
 <textarea id="note" rows="4"></textarea>
@@ -193,6 +196,7 @@ Le date previste vengono calcolate automaticamente in base alla data di deposizi
 <label>Numero uovo</label>
 <input id="newEggNumber" type="number" min="1" step="1" required>
 </div>
+
 <div>
 <label>Data deposizione</label>
 <input id="newEggDate" type="date">
@@ -211,6 +215,7 @@ Le date previste vengono calcolate automaticamente in base alla data di deposizi
 
 <label>Note</label>
 <textarea id="newEggNotes" rows="2"></textarea>
+
 <button id="addEggButton" type="submit">Registra uovo</button>
 <p id="eggMessage"></p>
 </form>
@@ -224,7 +229,7 @@ Le date previste vengono calcolate automaticamente in base alla data di deposizi
 
 <div class="panel">
 <h2>Registra un nuovo pullo</h2>
-<p class="muted">Registra i pulli uno alla volta. L'associazione all'uovo di provenienza è facoltativa. Dopo il salvataggio il modulo si svuota automaticamente.</p>
+<p class="muted">Registra i pulli uno alla volta. L'associazione all'uovo di provenienza è facoltativa. La data di inanellamento viene calcolata automaticamente dalla data di nascita e dai giorni impostati per questa covata.</p>
 
 <form id="chickForm">
 <div class="grid">
@@ -232,6 +237,7 @@ Le date previste vengono calcolate automaticamente in base alla data di deposizi
 <label>Anello</label>
 <input id="newChickRing" type="text">
 </div>
+
 <div>
 <label>Sesso</label>
 <select id="newChickSex">
@@ -241,28 +247,34 @@ Le date previste vengono calcolate automaticamente in base alla data di deposizi
 <option value="Non determinato">Non determinato</option>
 </select>
 </div>
+
 <div>
 <label>Mutazione</label>
 <input id="newChickMutation" type="text">
 </div>
+
 <div>
 <label>Data nascita</label>
 <input id="newChickBirth" type="date">
 </div>
+
 <div>
-<label>Data inanellamento (calcolata)</label>
+<label>Data inanellamento (calcolo automatico)</label>
 <input id="newChickRingDate" type="date" readonly>
 </div>
+
 <div>
 <label>Data svezzamento</label>
 <input id="newChickWeaning" type="date">
 </div>
+
 <div>
 <label>Uovo di provenienza (facoltativo)</label>
 <select id="newChickEgg">
 <option value="">Non specificato</option>
 </select>
 </div>
+
 <div>
 <label>Stato</label>
 <select id="newChickState">
@@ -275,6 +287,7 @@ Le date previste vengono calcolate automaticamente in base alla data di deposizi
 
 <label>Note</label>
 <textarea id="newChickNotes" rows="3"></textarea>
+
 <button id="addChickButton" type="submit">Registra pullo</button>
 <p id="newChickMessage"></p>
 </form>
@@ -284,7 +297,11 @@ Le date previste vengono calcolate automaticamente in base alla data di deposizi
 <h2>Pulli registrati</h2>
 <p class="muted">Riepilogo dei pulli registrati in questa covata.</p>
 <div id="chicks">Caricamento pulli...</div>
-<button type="button" id="toggleChickEdits" class="secondary" hidden>Modifica pulli</button>
+
+<button type="button" id="toggleChickEdits" class="secondary" hidden>
+Modifica pulli
+</button>
+
 <div id="chickEdits" hidden></div>
 </div>
 
@@ -295,6 +312,7 @@ Le date previste vengono calcolate automaticamente in base alla data di deposizi
 </section>
 
 <p id="globalMessage" class="error"></p>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -313,6 +331,7 @@ const covataId=params.get("covata");
 const $=id=>document.getElementById(id);
 
 let covata=null;
+let coppia=null;
 let uova=[];
 let pulli=[];
 let caricamentoInCorso=false;
@@ -379,10 +398,10 @@ function makeField(labelText,id,type,value,options){
  return {wrap,input};
 }
 
-/* CALCOLO DATE */
+/* DATE: CALCOLO SENZA PROBLEMI DI FUSO ORARIO */
 
 function addDays(dateValue,daysValue){
- if(!dateValue||daysValue===null||daysValue===undefined||daysValue==="")return "";
+ if(!dateValue||daysValue===""||daysValue===null||daysValue===undefined)return "";
 
  const days=Number(daysValue);
  if(!Number.isInteger(days)||days<0)return "";
@@ -393,58 +412,83 @@ function addDays(dateValue,daysValue){
  const date=new Date(Date.UTC(parts[0],parts[1]-1,parts[2]));
  date.setUTCDate(date.getUTCDate()+days);
 
- return date.getUTCFullYear()+"-"+
-  String(date.getUTCMonth()+1).padStart(2,"0")+"-"+
-  String(date.getUTCDate()).padStart(2,"0");
+ return [
+  date.getUTCFullYear(),
+  String(date.getUTCMonth()+1).padStart(2,"0"),
+  String(date.getUTCDate()).padStart(2,"0")
+ ].join("-");
 }
 
-function getDays(id){
+function formatDate(dateValue){
+ if(!dateValue)return "";
+ const parts=String(dateValue).slice(0,10).split("-");
+ if(parts.length!==3)return dateValue;
+ return parts[2]+"/"+parts[1]+"/"+parts[0];
+}
+
+function valoreGabbia(){
+ return coppia?.gabbia||covata?.gabbia||"";
+}
+
+function validDays(id,label){
  const value=$(id).value;
  if(value==="")return null;
+
  const number=Number(value);
- return Number.isInteger(number)&&number>=0?number:null;
+ if(!Number.isInteger(number)||number<0){
+  throw new Error(label+" deve essere un numero intero maggiore o uguale a zero.");
+ }
+ return number;
 }
 
 function updatePredictedDates(){
- const deposition=$("data_deposizione").value;
- $("data_speratura_prevista").value=
-  addDays(deposition,getDays("giorni_speratura"));
- $("data_schiusa_prevista").value=
-  addDays(deposition,getDays("giorni_schiusa"));
+ $("data_speratura_prevista").value=addDays(
+  $("data_deposizione").value,
+  $("giorni_speratura").value
+ );
+
+ $("data_schiusa_prevista").value=addDays(
+  $("data_deposizione").value,
+  $("giorni_schiusa").value
+ );
+
+ updateNewChickRingDate();
 }
 
 function updateNewChickRingDate(){
- $("newChickRingDate").value=
-  addDays(
-   $("newChickBirth").value,
-   getDays("giorni_inanellamento")
-  );
-}
-
-function updateExistingChickRingDates(){
- pulli.forEach(chick=>{
-  const birth=$("chick-edit-birth-"+chick.id);
-  const ringDate=$("chick-edit-ringdate-"+chick.id);
-  if(birth&&ringDate){
-   ringDate.value=addDays(
-    birth.value,
-    getDays("giorni_inanellamento")
-   );
-  }
- });
+ $("newChickRingDate").value=addDays(
+  $("newChickBirth").value,
+  $("giorni_inanellamento").value
+ );
 }
 
 $("data_deposizione").addEventListener("input",updatePredictedDates);
 $("giorni_speratura").addEventListener("input",updatePredictedDates);
 $("giorni_schiusa").addEventListener("input",updatePredictedDates);
-
-$("newChickBirth").addEventListener("input",updateNewChickRingDate);
 $("giorni_inanellamento").addEventListener("input",()=>{
  updateNewChickRingDate();
- updateExistingChickRingDates();
+
+ pulli.forEach(chick=>{
+  const cell=$("chick-table-ringdate-"+chick.id);
+  if(cell){
+   cell.textContent=formatDate(
+    addDays(chick.data_nascita,$("giorni_inanellamento").value)
+   )||"Da calcolare";
+  }
+ });
+
+ document.querySelectorAll("[id^='chick-edit-birth-']").forEach(input=>{
+  const id=input.id.replace("chick-edit-birth-","");
+  const ringDate=$("chick-edit-ringdate-"+id);
+  if(ringDate){
+   ringDate.value=addDays(input.value,$("giorni_inanellamento").value);
+  }
+ });
 });
 
-/* CONTATORI */
+$("newChickBirth").addEventListener("input",updateNewChickRingDate);
+
+/* CALCOLO CONTATORI */
 
 function calcolaUovaFeconde(){
  return uova.filter(u=>
@@ -470,7 +514,6 @@ function setStats(){
  $("statPending").textContent=count("Da verificare");
  $("statChicks").textContent=pulli.length;
  $("statWeaned").textContent=weaned;
-
  $("uova_feconde").value=fertile;
 
  $("aggregateInfo").textContent=
@@ -479,52 +522,87 @@ function setStats(){
   "; uova registrate singolarmente: "+uova.length+".";
 }
 
-/* VISUALIZZAZIONE UOVA */
+/* VISUALIZZAZIONE UOVA IN TABELLA, RAGGRUPPATE PER COVATA */
 
 function renderEggs(){
  const area=$("eggs");
  area.replaceChildren();
 
+ const title=makeElement("h3","","Covata n. "+(covata?.numero??"—"));
+ area.appendChild(title);
+
  if(!uova.length){
-  area.appendChild(makeElement("p","muted","Nessun uovo registrato singolarmente."));
+  area.appendChild(makeElement("p","muted","Nessun uovo registrato in questa covata."));
   return;
  }
 
- uova.forEach(egg=>{
-  const card=makeElement("div","item");
-  card.appendChild(makeElement("h3","","Uovo n. "+egg.numero));
-  card.appendChild(makeElement("span","status",egg.esito_speratura||"Da verificare"));
+ const tableWrap=makeElement("div","tableWrap");
+ const table=makeElement("table","eggTable");
+ const thead=makeElement("thead");
+ const header=makeElement("tr");
 
-  const grid=makeElement("div","grid");
+ ["Numero uovo","Data deposizione","Esito","Note","Azioni"].forEach(label=>{
+  header.appendChild(makeElement("th","",label));
+ });
 
-  const date=makeField("Data deposizione","egg-date-"+egg.id,"date",egg.data_deposizione);
+ thead.appendChild(header);
+ table.appendChild(thead);
 
-  const resultOptions=ESITI.map(s=>({value:s,label:s}));
+ const tbody=makeElement("tbody");
+
+ [...uova].sort((a,b)=>Number(a.numero)-Number(b.numero)).forEach(egg=>{
+  const row=makeElement("tr");
+  row.appendChild(makeElement("td","","N. "+egg.numero));
+
+  const dateCell=makeElement("td");
+  const dateInput=makeElement("input");
+  dateInput.type="date";
+  dateInput.id="egg-date-"+egg.id;
+  dateInput.value=egg.data_deposizione||"";
+  dateCell.appendChild(dateInput);
+  row.appendChild(dateCell);
+
+  const statusCell=makeElement("td");
+  const statusSelect=makeElement("select");
+  statusSelect.id="egg-status-"+egg.id;
+
+  const resultOptions=ESITI.map(value=>({value,label:value}));
+
   if(egg.esito_speratura&&!ESITI.includes(egg.esito_speratura)){
    resultOptions.push({value:egg.esito_speratura,label:egg.esito_speratura});
   }
 
-  const result=makeField(
-   "Esito","egg-status-"+egg.id,"select",
-   egg.esito_speratura||"Da verificare",resultOptions
-  );
+  resultOptions.forEach(option=>{
+   const opt=makeElement("option","",option.label);
+   opt.value=option.value;
+   statusSelect.appendChild(opt);
+  });
 
-  grid.appendChild(date.wrap);
-  grid.appendChild(result.wrap);
-  card.appendChild(grid);
+  statusSelect.value=egg.esito_speratura||"Da verificare";
+  statusCell.appendChild(statusSelect);
+  row.appendChild(statusCell);
 
-  const notes=makeField("Note","egg-notes-"+egg.id,"textarea",egg.note);
-  card.appendChild(notes.wrap);
+  const notesCell=makeElement("td");
+  const notes=makeElement("textarea");
+  notes.id="egg-notes-"+egg.id;
+  notes.rows=1;
+  notes.value=egg.note||"";
+  notesCell.appendChild(notes);
+  row.appendChild(notesCell);
 
-  const actions=makeElement("div","actions");
-  const save=makeElement("button","","Salva uovo");
+  const actionCell=makeElement("td");
+  const save=makeElement("button","tableActionButton","Salva");
   save.type="button";
   save.addEventListener("click",()=>saveEgg(egg.id,save));
+  actionCell.appendChild(save);
+  row.appendChild(actionCell);
 
-  actions.appendChild(save);
-  card.appendChild(actions);
-  area.appendChild(card);
+  tbody.appendChild(row);
  });
+
+ table.appendChild(tbody);
+ tableWrap.appendChild(table);
+ area.appendChild(tableWrap);
 }
 
 /* MODIFICA PULLI */
@@ -550,7 +628,6 @@ function renderChickCards(){
   ));
 
   const grid=makeElement("div","grid");
-
   const ring=makeField("Anello","chick-edit-ring-"+chick.id,"text",chick.anello);
 
   const sex=makeField("Sesso","chick-edit-sex-"+chick.id,"select",chick.sesso||"",[
@@ -561,19 +638,13 @@ function renderChickCards(){
   ]);
 
   const mutation=makeField("Mutazione","chick-edit-mutation-"+chick.id,"text",chick.mutazione);
-
   const birth=makeField("Data nascita","chick-edit-birth-"+chick.id,"date",chick.data_nascita);
 
-  const calculatedRingDate=addDays(
-   chick.data_nascita,
-   getDays("giorni_inanellamento")
-  );
-
   const ringDate=makeField(
-   "Data inanellamento (calcolata)",
+   "Data inanellamento (automatica)",
    "chick-edit-ringdate-"+chick.id,
    "date",
-   calculatedRingDate
+   addDays(chick.data_nascita,$("giorni_inanellamento").value)
   );
 
   ringDate.input.readOnly=true;
@@ -581,15 +652,13 @@ function renderChickCards(){
   birth.input.addEventListener("input",()=>{
    ringDate.input.value=addDays(
     birth.input.value,
-    getDays("giorni_inanellamento")
+    $("giorni_inanellamento").value
    );
   });
 
   const weaning=makeField(
-   "Data svezzamento",
-   "chick-edit-weaning-"+chick.id,
-   "date",
-   chick.data_svezzamento
+   "Data svezzamento","chick-edit-weaning-"+chick.id,
+   "date",chick.data_svezzamento
   );
 
   [ring,sex,mutation,birth,ringDate,weaning].forEach(field=>{
@@ -612,8 +681,8 @@ function renderChickCards(){
   const save=makeElement("button","","Salva modifiche pullo");
   save.type="button";
   save.addEventListener("click",()=>updateChick(chick.id,save));
-
   card.appendChild(save);
+
   area.appendChild(card);
  });
 }
@@ -636,7 +705,6 @@ function renderChicks(){
 
  const eggSelect=$("newChickEgg");
  const selectedEgg=eggSelect.value;
-
  eggSelect.replaceChildren();
 
  const emptyOption=document.createElement("option");
@@ -666,10 +734,9 @@ function renderChicks(){
  const thead=makeElement("thead");
  const headerRow=makeElement("tr");
 
- [
-  "Anello","Sesso","Mutazione","Nascita",
-  "Inanellamento","Svezzamento","Stato","Uovo"
- ].forEach(label=>headerRow.appendChild(makeElement("th","",label)));
+ ["Anello","Sesso","Mutazione","Nascita","Inanellamento","Svezzamento","Stato","Uovo"].forEach(label=>{
+  headerRow.appendChild(makeElement("th","",label));
+ });
 
  thead.appendChild(headerRow);
  table.appendChild(thead);
@@ -684,14 +751,28 @@ function renderChicks(){
    chick.anello||"—",
    chick.sesso||"—",
    chick.mutazione||"—",
-   chick.data_nascita||"—",
-   chick.data_inanellamento||"—",
-   chick.data_svezzamento||"—",
-   chick.stato||"—",
-   egg?"N. "+egg.numero:"Non specificato"
+   formatDate(chick.data_nascita)||"—"
   ];
 
   values.forEach(value=>row.appendChild(makeElement("td","",value)));
+
+  const ringDateCell=makeElement("td");
+
+  const ringDateValue=makeElement(
+   "span","",
+   formatDate(addDays(chick.data_nascita,$("giorni_inanellamento").value))||"Da calcolare"
+  );
+
+  ringDateValue.id="chick-table-ringdate-"+chick.id;
+  ringDateCell.appendChild(ringDateValue);
+  row.appendChild(ringDateCell);
+
+  [
+   formatDate(chick.data_svezzamento)||"—",
+   chick.stato||"—",
+   egg?"N. "+egg.numero:"Non specificato"
+  ].forEach(value=>row.appendChild(makeElement("td","",value)));
+
   tbody.appendChild(row);
  });
 
@@ -702,20 +783,26 @@ function renderChicks(){
  renderChickCards();
 }
 
-/* CARICAMENTO DATI */
+/* CARICAMENTO E AGGIORNAMENTO DATI */
 
 async function refreshData(){
- const {data,error}=await client.rpc(
-  "apri_covata_coppia_da_tag",
-  {p_codice:tag,p_covata_id:covataId}
- );
+ const {data,error}=await client.rpc("apri_covata_coppia_da_tag",{
+  p_codice:tag,
+  p_covata_id:covataId
+ });
 
  if(error)throw error;
- if(!data||!data.covata)throw new Error("Impossibile aggiornare i dati della covata.");
+
+ if(!data||!data.covata){
+  throw new Error("Impossibile aggiornare i dati della covata.");
+ }
 
  covata=data.covata;
+ coppia=data.coppia||coppia;
  uova=Array.isArray(data.uova)?data.uova:[];
  pulli=Array.isArray(data.pulli)?data.pulli:[];
+
+ $("gabbia").value=valoreGabbia();
 
  setStats();
  renderEggs();
@@ -731,17 +818,19 @@ async function loadSheet(){
  message("globalMessage","");
 
  try{
-  const {data,error}=await client.rpc(
-   "apri_covata_coppia_da_tag",
-   {p_codice:tag,p_covata_id:covataId}
-  );
+  const {data,error}=await client.rpc("apri_covata_coppia_da_tag",{
+   p_codice:tag,
+   p_covata_id:covataId
+  });
 
   if(error)throw error;
+
   if(!data||!data.covata){
    throw new Error("Covata non trovata o accesso non autorizzato.");
   }
 
   covata=data.covata;
+  coppia=data.coppia||null;
   uova=Array.isArray(data.uova)?data.uova:[];
   pulli=Array.isArray(data.pulli)?data.pulli:[];
 
@@ -754,14 +843,14 @@ async function loadSheet(){
    "data_deposizione",
    "data_inizio_cova",
    "data_speratura_effettiva",
+   "giorni_speratura",
+   "giorni_schiusa",
+   "giorni_inanellamento",
    "uova_deposte",
    "uova_feconde",
    "data_schiusa_effettiva",
    "note",
-   "stato",
-   "giorni_speratura",
-   "giorni_schiusa",
-   "giorni_inanellamento"
+   "stato"
   ];
 
   fields.forEach(key=>{
@@ -769,13 +858,12 @@ async function loadSheet(){
    $(key).value=value===null||value===undefined?"":value;
   });
 
-  updatePredictedDates();
-  updateNewChickRingDate();
+  $("gabbia").value=valoreGabbia();
 
+  updatePredictedDates();
   setStats();
   renderEggs();
   renderChicks();
-
   show("sheet");
 
  }catch(error){
@@ -791,15 +879,11 @@ async function saveEgg(id,button){
  button.disabled=true;
 
  try{
-  const {error}=await client
-   .from("uova")
-   .update({
-    data_deposizione:$("egg-date-"+id).value||null,
-    esito_speratura:$("egg-status-"+id).value,
-    note:$("egg-notes-"+id).value||null
-   })
-   .eq("id",id)
-   .eq("covata_id",covata.id);
+  const {error}=await client.from("uova").update({
+   data_deposizione:$("egg-date-"+id).value||null,
+   esito_speratura:$("egg-status-"+id).value,
+   note:$("egg-notes-"+id).value||null
+  }).eq("id",id).eq("covata_id",covata.id);
 
   if(error)throw error;
 
@@ -833,15 +917,13 @@ $("eggForm").addEventListener("submit",async e=>{
    throw new Error("Questo numero di uovo è già presente nella covata.");
   }
 
-  const {error}=await client
-   .from("uova")
-   .insert({
-    covata_id:covata.id,
-    numero:number,
-    data_deposizione:$("newEggDate").value||null,
-    esito_speratura:$("newEggStatus").value,
-    note:$("newEggNotes").value||null
-   });
+  const {error}=await client.from("uova").insert({
+   covata_id:covata.id,
+   numero:number,
+   data_deposizione:$("newEggDate").value||null,
+   esito_speratura:$("newEggStatus").value,
+   note:$("newEggNotes").value||null
+  });
 
   if(error)throw error;
 
@@ -873,36 +955,30 @@ async function addChick(){
    throw new Error("L'uovo selezionato non appartiene a questa covata.");
   }
 
-  const birthDate=$("newChickBirth").value;
-  const ringDate=addDays(birthDate,getDays("giorni_inanellamento"));
+  const birth=$("newChickBirth").value||null;
+  const ringDate=addDays(birth,$("giorni_inanellamento").value);
 
-  const {error}=await client
-   .from("pulli")
-   .insert({
-    covata_id:covata.id,
-    uovo_id:selectedEgg||null,
-    anello:$("newChickRing").value.trim()||null,
-    sesso:$("newChickSex").value||null,
-    mutazione:$("newChickMutation").value.trim()||null,
-    data_nascita:birthDate||null,
-    data_inanellamento:ringDate||null,
-    data_svezzamento:$("newChickWeaning").value||null,
-    stato:$("newChickState").value||"Vivo",
-    note:$("newChickNotes").value.trim()||null
-   });
+  const {error}=await client.from("pulli").insert({
+   covata_id:covata.id,
+   uovo_id:selectedEgg||null,
+   anello:$("newChickRing").value.trim()||null,
+   sesso:$("newChickSex").value||null,
+   mutazione:$("newChickMutation").value.trim()||null,
+   data_nascita:birth,
+   data_inanellamento:ringDate||null,
+   data_svezzamento:$("newChickWeaning").value||null,
+   stato:$("newChickState").value||"Vivo",
+   note:$("newChickNotes").value.trim()||null
+  });
 
   if(error)throw error;
 
   $("chickForm").reset();
-  $("newChickRingDate").value="";
+  updateNewChickRingDate();
 
   await refreshData();
 
-  message(
-   "newChickMessage",
-   "Pullo registrato correttamente. Puoi inserire il successivo.",
-   "success"
-  );
+  message("newChickMessage","Pullo registrato correttamente. Puoi inserire il successivo.","success");
 
  }catch(error){
   message("newChickMessage","Errore durante la registrazione: "+error.message,"error");
@@ -932,23 +1008,19 @@ async function updateChick(id,button){
  button.disabled=true;
 
  try{
-  const birthDate=$("chick-edit-birth-"+id).value;
-  const ringDate=addDays(birthDate,getDays("giorni_inanellamento"));
+  const birth=$("chick-edit-birth-"+id).value||null;
+  const ringDate=addDays(birth,$("giorni_inanellamento").value);
 
-  const {error}=await client
-   .from("pulli")
-   .update({
-    anello:$("chick-edit-ring-"+id).value||null,
-    sesso:$("chick-edit-sex-"+id).value||null,
-    mutazione:$("chick-edit-mutation-"+id).value||null,
-    data_nascita:birthDate||null,
-    data_inanellamento:ringDate||null,
-    data_svezzamento:$("chick-edit-weaning-"+id).value||null,
-    stato:$("chick-edit-state-"+id).value||null,
-    note:$("chick-edit-notes-"+id).value||null
-   })
-   .eq("id",id)
-   .eq("covata_id",covata.id);
+  const {error}=await client.from("pulli").update({
+   anello:$("chick-edit-ring-"+id).value||null,
+   sesso:$("chick-edit-sex-"+id).value||null,
+   mutazione:$("chick-edit-mutation-"+id).value||null,
+   data_nascita:birth,
+   data_inanellamento:ringDate||null,
+   data_svezzamento:$("chick-edit-weaning-"+id).value||null,
+   stato:$("chick-edit-state-"+id).value||null,
+   note:$("chick-edit-notes-"+id).value||null
+  }).eq("id",id).eq("covata_id",covata.id);
 
   if(error)throw error;
 
@@ -967,6 +1039,7 @@ async function updateChick(id,button){
 
 $("covataForm").addEventListener("submit",async e=>{
  e.preventDefault();
+
  if(!covata)return;
 
  const button=$("saveButton");
@@ -979,48 +1052,36 @@ $("covataForm").addEventListener("submit",async e=>{
  try{
   const uovaDeposte=n("uova_deposte");
 
-  if(
-   uovaDeposte!==null&&
-   (!Number.isInteger(uovaDeposte)||uovaDeposte<0)
-  ){
+  if(uovaDeposte!==null&&(!Number.isInteger(uovaDeposte)||uovaDeposte<0)){
    throw new Error("Il totale delle uova deposte deve essere un numero intero maggiore o uguale a zero.");
   }
 
-  const giorniSperatura=n("giorni_speratura");
-  const giorniSchiusa=n("giorni_schiusa");
-  const giorniInanellamento=n("giorni_inanellamento");
-
-  [giorniSperatura,giorniSchiusa,giorniInanellamento].forEach(value=>{
-   if(value!==null&&(!Number.isInteger(value)||value<0)){
-    throw new Error("I giorni previsti devono essere numeri interi maggiori o uguali a zero.");
-   }
-  });
+  const giorniSperatura=validDays("giorni_speratura","I giorni per la speratura");
+  const giorniSchiusa=validDays("giorni_schiusa","I giorni per la schiusa");
+  const giorniInanellamento=validDays("giorni_inanellamento","I giorni per l'inanellamento");
 
   updatePredictedDates();
 
   const uovaFecondeCalcolate=calcolaUovaFeconde();
 
-  const {data,error}=await client.rpc(
-   "salva_covata_da_tag",
-   {
-    p_codice:tag,
-    p_covata_id:covata.id,
-    p_gabbia:$("gabbia").value||null,
-    p_data_deposizione:d("data_deposizione"),
-    p_data_inizio_cova:d("data_inizio_cova"),
-    p_data_speratura_prevista:d("data_speratura_prevista"),
-    p_data_speratura_effettiva:d("data_speratura_effettiva"),
-    p_uova_deposte:uovaDeposte,
-    p_uova_feconde:uovaFecondeCalcolate,
-    p_data_schiusa_prevista:d("data_schiusa_prevista"),
-    p_data_schiusa_effettiva:d("data_schiusa_effettiva"),
-    p_note:$("note").value||null,
-    p_stato:$("stato").value||null,
-    p_giorni_speratura:giorniSperatura,
-    p_giorni_schiusa:giorniSchiusa,
-    p_giorni_inanellamento:giorniInanellamento
-   }
-  );
+  const {data,error}=await client.rpc("salva_covata_da_tag",{
+   p_codice:tag,
+   p_covata_id:covata.id,
+   p_gabbia:$("gabbia").value||null,
+   p_data_deposizione:d("data_deposizione"),
+   p_data_inizio_cova:d("data_inizio_cova"),
+   p_data_speratura_prevista:d("data_speratura_prevista"),
+   p_data_speratura_effettiva:d("data_speratura_effettiva"),
+   p_uova_deposte:uovaDeposte,
+   p_uova_feconde:uovaFecondeCalcolate,
+   p_data_schiusa_prevista:d("data_schiusa_prevista"),
+   p_data_schiusa_effettiva:d("data_schiusa_effettiva"),
+   p_note:$("note").value||null,
+   p_stato:$("stato").value||null,
+   p_giorni_speratura:giorniSperatura,
+   p_giorni_schiusa:giorniSchiusa,
+   p_giorni_inanellamento:giorniInanellamento
+  });
 
   if(error)throw error;
 
@@ -1068,11 +1129,7 @@ if(!client){
 
 if(!tag||!covataId){
  hide("loading");
- message(
-  "globalMessage",
-  "Collegamento incompleto: manca il codice NFC oppure l'ID della covata.",
-  "error"
- );
+ message("globalMessage","Collegamento incompleto: manca il codice NFC oppure l'ID della covata.","error");
  return;
 }
 

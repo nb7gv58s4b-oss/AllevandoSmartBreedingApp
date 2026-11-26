@@ -41,6 +41,21 @@ button.secondary{background:#64756a}
 .eggTable textarea{min-height:38px;resize:vertical}
 .tableActionButton{padding:8px 10px;font-size:12px;white-space:nowrap}
 #toggleChickEdits{margin-top:12px}
+
+/* SVUOTA SCHEDA */
+.dangerPanel{border:2px solid #b42318;background:#fffafa}
+.dangerPanel h2{color:#b42318}
+.dangerButton{background:#b42318;color:white;width:100%;padding:15px;font-size:16px}
+.dangerButton:hover{background:#8f1c13}
+.dangerSummary{background:#fff0ef;border-radius:10px;padding:14px;margin:14px 0}
+.dangerSummary strong{color:#b42318}
+.dangerStats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.dangerStat{background:white;border:1px solid #f0c9c6;border-radius:8px;padding:10px;text-align:center}
+.dangerStat strong{display:block;font-size:22px;color:#b42318}
+.dangerStat span{font-size:12px;color:#68776d}
+.dangerWarning{font-size:14px;line-height:1.5;color:#8f1c13}
+.dangerConfirm{border-top:1px solid #f0c9c6;margin-top:15px;padding-top:15px}
+.dangerMessage{font-size:14px;margin-top:10px}
 @media(max-width:550px){
  .grid{grid-template-columns:1fr}
  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -283,6 +298,49 @@ Modifica pulli
 <div id="chickEdits" hidden></div>
 </div>
 
+<!-- SVUOTA SCHEDA -->
+<div class="panel dangerPanel" id="emptySheetPanel">
+<h2>SVUOTA SCHEDA</h2>
+<p class="dangerWarning">
+Questa funzione cancella l'intera scheda della coppia collegata a questa Smart Card,
+non soltanto la covata attualmente aperta.
+</p>
+
+<div class="dangerSummary">
+<strong>ATTENZIONE: dati che verranno eliminati</strong>
+<p class="muted">Il riepilogo comprende tutte le stagioni e tutte le covate della coppia.</p>
+
+<div class="dangerStats">
+<div class="dangerStat"><strong id="emptyCountSeasons">—</strong><span>Stagioni</span></div>
+<div class="dangerStat"><strong id="emptyCountCovates">—</strong><span>Covate</span></div>
+<div class="dangerStat"><strong id="emptyCountEggs">—</strong><span>Uova</span></div>
+<div class="dangerStat"><strong id="emptyCountChicks">—</strong><span>Pulli</span></div>
+</div>
+<p id="emptyCountMessage" class="muted small">Calcolo dei dati in corso...</p>
+</div>
+
+<p class="dangerWarning">
+Prima della cancellazione, il sistema crea un backup dei dati.
+Vengono conservati l'account, tutti i riproduttori e tutte le Smart Card e i QR assegnati all'allevatore.
+Le card vengono scollegate dai vecchi dati e restano disponibili per un nuovo utilizzo.
+</p>
+
+<div class="dangerConfirm">
+<form id="emptySheetForm">
+<label for="emptyPassword">Conferma la tua password</label>
+<input id="emptyPassword" type="password" autocomplete="current-password" required>
+
+<label for="emptyConfirmation">Per confermare, scrivi esattamente: SVUOTA COPPIA</label>
+<input id="emptyConfirmation" type="text" autocomplete="off" required>
+
+<button type="submit" id="emptySheetButton" class="dangerButton" disabled>
+SVUOTA SCHEDA
+</button>
+<p id="emptySheetMessage" class="dangerMessage"></p>
+</form>
+</div>
+</div>
+
 </section>
 
 <section id="loading" class="panel">
@@ -313,6 +371,7 @@ let coppia=null;
 let uova=[];
 let pulli=[];
 let caricamentoInCorso=false;
+let conteggiSvuotamentoCaricati=false;
 
 const ESITI=[
  "Da verificare",
@@ -530,14 +589,6 @@ async function sincronizzaUova(){
   if(insertError)throw insertError;
  }
 
- /*
-  * Non aggiorniamo le date delle uova già esistenti.
-  * In questo modo le eventuali modifiche manuali dell'allevatore
-  * rimangono conservate.
-  *
-  * Le date automatiche vengono assegnate alle nuove righe.
-  */
-
  const {data:aggiornate,error:reloadError}=await client
   .from("uova")
   .select("*")
@@ -589,6 +640,93 @@ function setStats(){
   "; rotte: "+rotte+
   "; espulse: "+espulse+
   "; rimosse: "+rimosse+".";
+}
+
+/* RIEPILOGO DATI PER SVUOTA SCHEDA */
+
+async function caricaConteggiSvuotamento(){
+ conteggiSvuotamentoCaricati=false;
+ $("emptySheetButton").disabled=true;
+
+ $("emptyCountSeasons").textContent="—";
+ $("emptyCountCovates").textContent="—";
+ $("emptyCountEggs").textContent="—";
+ $("emptyCountChicks").textContent="—";
+ message("emptyCountMessage","Calcolo dei dati dell'intera coppia...","muted");
+
+ try{
+  if(!coppia?.id){
+   throw new Error("Non è stato possibile identificare la coppia.");
+  }
+
+  const {data:stagioni,error:seasonError}=await client
+   .from("anni_riproduttivi")
+   .select("id")
+   .eq("coppia_id",coppia.id);
+
+  if(seasonError)throw seasonError;
+
+  const listaStagioni=Array.isArray(stagioni)?stagioni:[];
+  const idsStagioni=listaStagioni.map(s=>s.id);
+
+  let listaCovate=[];
+
+  if(idsStagioni.length){
+   const {data:covateData,error:covateError}=await client
+    .from("covate")
+    .select("id")
+    .in("anno_id",idsStagioni);
+
+   if(covateError)throw covateError;
+   listaCovate=Array.isArray(covateData)?covateData:[];
+  }
+
+  const idsCovate=listaCovate.map(c=>c.id);
+
+  let numeroUova=0;
+  let numeroPulli=0;
+
+  if(idsCovate.length){
+   const {data:uovaData,error:uovaError}=await client
+    .from("uova")
+    .select("id")
+    .in("covata_id",idsCovate);
+
+   if(uovaError)throw uovaError;
+   numeroUova=Array.isArray(uovaData)?uovaData.length:0;
+
+   const {data:pulliData,error:pulliError}=await client
+    .from("pulli")
+    .select("id")
+    .in("covata_id",idsCovate);
+
+   if(pulliError)throw pulliError;
+   numeroPulli=Array.isArray(pulliData)?pulliData.length:0;
+  }
+
+  $("emptyCountSeasons").textContent=listaStagioni.length;
+  $("emptyCountCovates").textContent=listaCovate.length;
+  $("emptyCountEggs").textContent=numeroUova;
+  $("emptyCountChicks").textContent=numeroPulli;
+
+  message(
+   "emptyCountMessage",
+   "Riepilogo aggiornato per tutte le stagioni della coppia.",
+   "success"
+  );
+
+  conteggiSvuotamentoCaricati=true;
+  $("emptySheetButton").disabled=false;
+
+ }catch(error){
+  message(
+   "emptyCountMessage",
+   "Impossibile verificare tutti i conteggi: "+error.message+
+   ". La cancellazione resta disabilitata.",
+   "error"
+  );
+  $("emptySheetButton").disabled=true;
+ }
 }
 
 /* TABELLA UOVA */
@@ -944,16 +1082,14 @@ async function loadSheet(){
 
   updatePredictedDates();
 
-  /*
-   * All'apertura vengono create soltanto le eventuali righe mancanti.
-   * Le date delle uova già presenti non vengono sovrascritte.
-   */
   await sincronizzaUova();
 
   setStats();
   renderEggs();
   renderChicks();
   show("sheet");
+
+  await caricaConteggiSvuotamento();
 
  }catch(error){
   message("globalMessage",error.message||"Errore durante il caricamento.","error");
@@ -1121,8 +1257,6 @@ $("covataForm").addEventListener("submit",async e=>{
 
   const uovaFecondeCalcolate=calcolaUovaFeconde();
 
-  /* PRIMO SALVATAGGIO: DATI GENERALI DELLA COVATA */
-
   const {data,error}=await client.rpc("salva_covata_da_tag",{
    p_codice:tag,
    p_covata_id:covata.id,
@@ -1148,8 +1282,6 @@ $("covataForm").addEventListener("submit",async e=>{
    throw new Error(data.errore||"Salvataggio della covata non riuscito.");
   }
 
-  /* SECONDO SALVATAGGIO: INTERVALLO TRAMITE RPC AUTORIZZATA */
-
   const {data:intervalData,error:intervalError}=await client.rpc(
    "salva_intervallo_deposizione_da_tag",
    {
@@ -1165,16 +1297,10 @@ $("covataForm").addEventListener("submit",async e=>{
    throw new Error("Salvataggio dell'intervallo tra deposizioni non riuscito.");
   }
 
-  /*
-   * TERZO PASSAGGIO:
-   * crea soltanto le uova mancanti in base al totale inserito.
-   * Non elimina mai le uova esistenti.
-   * Non sovrascrive le date già registrate.
-   */
-
   await sincronizzaUova();
-
   await refreshData();
+
+  await caricaConteggiSvuotamento();
 
   message(
    "saveMessage",
@@ -1186,6 +1312,130 @@ $("covataForm").addEventListener("submit",async e=>{
   message("saveMessage","Errore: "+error.message,"error");
  }finally{
   button.disabled=false;
+ }
+});
+
+/* SVUOTA SCHEDA: CONFERMA, RI-AUTENTICAZIONE E RPC */
+
+$("emptyConfirmation").addEventListener("input",()=>{
+ const conferma=$("emptyConfirmation").value;
+ $("emptySheetButton").disabled=
+  conferma!=="SVUOTA COPPIA"||
+  !conteggiSvuotamentoCaricati;
+});
+
+$("emptySheetForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+
+ const button=$("emptySheetButton");
+ const password=$("emptyPassword").value;
+ const confirmation=$("emptyConfirmation").value;
+
+ if(!coppia?.id||!tag){
+  message("emptySheetMessage","Impossibile identificare la coppia o la Smart Card.","error");
+  return;
+ }
+
+ if(!conteggiSvuotamentoCaricati){
+  message("emptySheetMessage","Il riepilogo dei dati non è stato verificato. Operazione bloccata.","error");
+  return;
+ }
+
+ if(!password){
+  message("emptySheetMessage","Inserisci la password del tuo account.","error");
+  return;
+ }
+
+ if(confirmation!=="SVUOTA COPPIA"){
+  message("emptySheetMessage","La frase di conferma non è corretta. Scrivi esattamente SVUOTA COPPIA.","error");
+  return;
+ }
+
+ const risposta=window.confirm(
+  "ATTENZIONE!\n\n"+
+  "Stai per cancellare l'intera coppia e TUTTE le sue stagioni, covate, uova e pulli.\n\n"+
+  "Prima verrà creato un backup.\n"+
+  "Account, riproduttori e Smart Card/QR verranno conservati.\n\n"+
+  "Vuoi procedere?"
+ );
+
+ if(!risposta)return;
+
+ button.disabled=true;
+ message("emptySheetMessage","Verifica dell'identità in corso...","muted");
+
+ try{
+  const {data:userData,error:userError}=await client.auth.getUser();
+
+  if(userError)throw userError;
+
+  const email=userData?.user?.email;
+
+  if(!email){
+   throw new Error("Non è stato possibile verificare l'email dell'account.");
+  }
+
+  const {data:loginData,error:loginError}=await client.auth.signInWithPassword({
+   email:email,
+   password:password
+  });
+
+  if(loginError)throw new Error("Password non valida: "+loginError.message);
+
+  if(!loginData?.session){
+   throw new Error("Autenticazione non completata. Accedi nuovamente e riprova.");
+  }
+
+  const {data:sessionData,error:sessionError}=await client.auth.getSession();
+
+  if(sessionError)throw sessionError;
+
+  if(!sessionData?.session){
+   throw new Error("Sessione non disponibile dopo la verifica della password.");
+  }
+
+  message("emptySheetMessage","Identità verificata. Creazione backup e cancellazione in corso...","muted");
+
+  const {data,error}=await client.rpc("svuota_scheda_da_tag",{
+   p_codice:tag
+  });
+
+  if(error)throw error;
+
+  if(data&&data.success===false){
+   throw new Error(data.errore||"La funzione non ha completato la cancellazione.");
+  }
+
+  if(data&&data.successo===false){
+   throw new Error(data.errore||"La funzione non ha completato la cancellazione.");
+  }
+
+  $("emptyPassword").value="";
+  $("emptyConfirmation").value="";
+
+  message(
+   "emptySheetMessage",
+   "Operazione completata. La scheda è stata svuotata e il backup è stato creato. Apertura della configurazione della coppia...",
+   "success"
+  );
+
+  button.disabled=true;
+
+  setTimeout(()=>{
+   location.href="./coppia.html?tag="+encodeURIComponent(tag);
+  },1800);
+
+ }catch(error){
+  message(
+   "emptySheetMessage",
+   "Operazione non completata: "+(error.message||"Errore sconosciuto")+
+   ". Non ripetere l'operazione prima di aver verificato lo stato dei dati.",
+   "error"
+  );
+
+  $("emptyPassword").value="";
+  button.disabled=!conteggiSvuotamentoCaricati||
+   $("emptyConfirmation").value!=="SVUOTA COPPIA";
  }
 });
 

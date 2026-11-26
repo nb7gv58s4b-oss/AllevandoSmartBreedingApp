@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ALLEVANDO Smart Breeding - Gestione coppia</title>
 <link rel="stylesheet" href="./css/style.css">
+
 <style>
 body{margin:0;background:#f3f5f2;font-family:Arial,sans-serif;color:#26352c}
 .page{max-width:950px;margin:auto;padding:16px}
@@ -28,6 +29,47 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .setup-intro{background:#f5f8f5;border-radius:10px;padding:14px;margin:12px 0}
 .newSeasonBox{background:#f5f8f5;border:1px solid #e0e8e2;border-radius:10px;padding:14px;margin:14px 0}
 .newSeasonBox h3{margin-top:0}
+
+/* SVUOTA SCHEDA */
+.dangerPanel{
+background:#fff5f5;
+border:2px solid #c62828;
+border-radius:14px;
+padding:20px;
+margin:20px 0;
+}
+.dangerPanel h2{color:#b42318;margin-top:0}
+.dangerPanel p{line-height:1.5}
+.dangerButton{
+background:#c62828;
+color:white;
+width:100%;
+padding:14px;
+font-size:15px;
+}
+.dangerButton:hover{background:#a51d1d}
+.dangerSummary{
+background:white;
+border:1px solid #f0caca;
+border-radius:9px;
+padding:13px;
+margin:14px 0;
+}
+.dangerSummary ul{padding-left:20px;margin-bottom:0}
+.dangerSummary li{margin:7px 0}
+.dangerInput{
+border:1px solid #d9a4a4;
+background:white;
+}
+.dangerMessage{font-size:14px;font-weight:bold;margin-top:12px}
+.dangerNotice{
+background:#fff;
+border-left:4px solid #c62828;
+padding:12px;
+margin:12px 0;
+font-size:13px;
+}
+
 @media(max-width:550px){
 .grid{grid-template-columns:1fr}
 .page{padding:10px}
@@ -35,6 +77,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 }
 </style>
 </head>
+
 <body>
 <div class="page">
 
@@ -112,9 +155,9 @@ Non verrà creato un duplicato. Il sistema verificherà anche il sesso e lo stat
 <div class="newSeasonBox">
 <h3>Crea una nuova stagione</h3>
 <p class="muted">
-Puoi creare una nuova stagione riproduttiva per questa coppia.
-Il sistema recupererà i riproduttori dalla stagione precedente, se disponibili.
-Potrai comunque modificarli successivamente.
+Puoi creare una nuova stagione riproduttiva indipendente.
+La nuova stagione sarà inizialmente vuota: dovrai assegnare i riproduttori prima di creare le covate.
+Le stagioni precedenti resteranno consultabili nello storico.
 </p>
 
 <form id="newSeasonForm">
@@ -199,6 +242,82 @@ Indica la gabbia in cui si trova stabilmente questa coppia. Il dato verrà ripor
 <div id="covateList" class="muted">Nessuna covata registrata.</div>
 </div>
 
+<!-- ============================================= -->
+<!-- SVUOTA SCHEDA -->
+<!-- ============================================= -->
+
+<section id="emptySheetPanel" class="dangerPanel">
+
+<h2>SVUOTA SCHEDA</h2>
+
+<p>
+Questa funzione elimina definitivamente la coppia e tutti i dati
+riproduttivi collegati a questa Smart Card.
+</p>
+
+<div class="dangerNotice">
+<strong>Attenzione:</strong>
+l'operazione non può essere annullata direttamente dall'interfaccia.
+Prima della cancellazione verrà creato un backup completo dei dati,
+conservato nell'archivio protetto di ALLEVANDO.
+</div>
+
+<div class="dangerSummary">
+<strong>Dati che verranno eliminati:</strong>
+<ul>
+<li>Stagioni riproduttive: <strong id="emptyCountSeasons">0</strong></li>
+<li>Covate: <strong id="emptyCountCovate">0</strong></li>
+<li>Uova: <strong id="emptyCountEggs">0</strong></li>
+<li>Pulli: <strong id="emptyCountChicks">0</strong></li>
+</ul>
+</div>
+
+<p><strong>Dati che verranno conservati:</strong></p>
+<ul>
+<li>Account dell'allevatore.</li>
+<li>Archivio generale dei riproduttori.</li>
+<li>Smart Card e codici QR, che verranno scollegati e potranno essere riutilizzati.</li>
+<li>Backup completo dell'operazione.</li>
+</ul>
+
+<hr>
+
+<form id="emptySheetForm">
+
+<label for="emptyPassword">Conferma la password del tuo account</label>
+<input
+id="emptyPassword"
+class="dangerInput"
+type="password"
+autocomplete="current-password"
+required
+placeholder="Inserisci la password"
+>
+
+<label for="emptyConfirmation">Digita esattamente SVUOTA COPPIA</label>
+<input
+id="emptyConfirmation"
+class="dangerInput"
+type="text"
+autocomplete="off"
+required
+placeholder="SVUOTA COPPIA"
+>
+
+<button
+id="emptySheetButton"
+class="dangerButton"
+type="submit"
+>
+SVUOTA SCHEDA
+</button>
+
+<p id="emptySheetMessage" class="dangerMessage"></p>
+
+</form>
+
+</section>
+
 </section>
 
 <section id="loading" class="panel">
@@ -247,6 +366,38 @@ function dataIt(v){
 if(!v)return "Non indicata";
 const p=v.split("-");
 return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:v;
+}
+
+// --------------------------------------------------
+// CALCOLO RIEPILOGO PER SVUOTA SCHEDA
+// --------------------------------------------------
+
+function aggiornaRiepilogoSvuotamento(){
+
+const numeroStagioni=stagioni.length;
+
+let numeroCovate=0;
+let numeroUova=0;
+let numeroPulli=0;
+
+stagioni.forEach(s=>{
+
+const covate=s.covate||[];
+
+numeroCovate+=covate.length;
+
+covate.forEach(c=>{
+numeroUova+=(c.uova||[]).length;
+numeroPulli+=(c.pulli||[]).length;
+});
+
+});
+
+$("emptyCountSeasons").textContent=numeroStagioni;
+$("emptyCountCovate").textContent=numeroCovate;
+$("emptyCountEggs").textContent=numeroUova;
+$("emptyCountChicks").textContent=numeroPulli;
+
 }
 
 // --------------------------------------------------
@@ -363,8 +514,6 @@ message("newSeasonMessage","Inserisci un anno valido compreso tra 1900 e 2200.",
 return;
 }
 
-// Controllo preventivo delle stagioni già caricate.
-
 const stagioneEsistente=stagioni.find(s=>Number(s.anno)===anno);
 
 if(stagioneEsistente){
@@ -389,10 +538,8 @@ button.textContent="Creazione in corso...";
 
 message(
 "newSeasonMessage",
-"Creazione della stagione e recupero dei riproduttori..."
+"Creazione della nuova stagione vuota..."
 );
-
-// Chiamata alla funzione SQL già presente in Supabase.
 
 const {data,error}=await client.rpc("crea_anno_riproduttivo",{
 p_coppia_id:coppia.id,
@@ -414,8 +561,6 @@ return;
 
 }
 
-// La funzione SQL restituisce direttamente l'UUID della stagione.
-
 if(!data){
 
 message(
@@ -432,11 +577,7 @@ const nuovaStagioneId=data;
 
 $("newSeasonForm").reset();
 
-// Ricarica tutte le stagioni e apre automaticamente quella appena creata.
-
 await loadSheet(nuovaStagioneId);
-
-// Verifica che la nuova stagione sia effettivamente presente nel risultato.
 
 const stagioneCreata=stagioni.find(s=>s.id===nuovaStagioneId);
 
@@ -447,7 +588,7 @@ renderSeason();
 
 message(
 "newSeasonMessage",
-"Stagione "+anno+" creata e selezionata correttamente. Controlla i riproduttori prima di creare nuove covate.",
+"Stagione "+anno+" creata e selezionata correttamente. Ora assegna i riproduttori prima di creare nuove covate.",
 "success"
 );
 
@@ -455,7 +596,7 @@ message(
 
 message(
 "newSeasonMessage",
-"La funzione ha restituito un identificativo, ma la nuova stagione non compare ancora nell'elenco. Ricarica la scheda e verifica.",
+"La nuova stagione non compare ancora nell'elenco. Ricarica la scheda e verifica.",
 "error"
 );
 
@@ -668,6 +809,167 @@ area.appendChild(card);
 }
 
 // --------------------------------------------------
+// SVUOTA SCHEDA - PASSWORD E CONFERMA
+// --------------------------------------------------
+
+$("emptySheetForm").addEventListener("submit",async e=>{
+
+e.preventDefault();
+
+if(!coppia||!codiceTag){
+
+message(
+"emptySheetMessage",
+"Impossibile identificare la coppia o la Smart Card.",
+"error"
+);
+
+return;
+
+}
+
+const password=$("emptyPassword").value;
+const conferma=$("emptyConfirmation").value;
+
+if(!password){
+
+message(
+"emptySheetMessage",
+"Inserisci la password del tuo account.",
+"error"
+);
+
+return;
+
+}
+
+if(conferma!=="SVUOTA COPPIA"){
+
+message(
+"emptySheetMessage",
+"La frase di conferma non è corretta. Digita esattamente SVUOTA COPPIA.",
+"error"
+);
+
+return;
+
+}
+
+const button=$("emptySheetButton");
+
+button.disabled=true;
+button.textContent="Verifica e svuotamento in corso...";
+
+message(
+"emptySheetMessage",
+"Verifica della password..."
+);
+
+try{
+
+// Recupera l'account attualmente autenticato.
+
+const {data:userData,error:userError}=await client.auth.getUser();
+
+if(userError||!userData?.user?.email){
+
+throw new Error(
+"Impossibile verificare l'account autenticato. Effettua nuovamente l'accesso."
+);
+
+}
+
+// Riconferma la password attraverso Supabase Auth.
+// La password non viene inviata alla funzione SQL e non viene salvata.
+
+const {error:reauthError}=await client.auth.signInWithPassword({
+
+email:userData.user.email,
+password:password
+
+});
+
+if(reauthError){
+
+throw new Error(
+"Password non corretta. Svuotamento annullato."
+);
+
+}
+
+message(
+"emptySheetMessage",
+"Password verificata. Creazione del backup e svuotamento della scheda..."
+);
+
+// Chiamata alla funzione SQL protetta.
+// La funzione verifica anche l'orario di autenticazione
+// e l'effettiva proprietà della coppia.
+
+const {data,error}=await client.rpc(
+"svuota_scheda_da_tag",
+{
+p_codice:codiceTag
+}
+);
+
+if(error){
+
+throw new Error(error.message);
+
+}
+
+if(!data||data.successo!==true){
+
+throw new Error(
+data?.messaggio||data?.errore||"Svuotamento non completato."
+);
+
+}
+
+// Pulizia immediata della password dal modulo.
+
+$("emptyPassword").value="";
+$("emptyConfirmation").value="";
+
+message(
+"globalMessage",
+"Scheda svuotata correttamente. Backup creato. La Smart Card è pronta per una nuova configurazione.",
+"success"
+);
+
+// La coppia è stata eliminata.
+// La card rimane assegnata all'allevatore e torna
+// allo stato iniziale di prima configurazione.
+
+coppia=null;
+stagioni=[];
+stagioneSelezionata=null;
+
+hide("main");
+
+await loadSheet();
+
+}catch(error){
+
+message(
+"emptySheetMessage",
+"Operazione non completata: "+error.message,
+"error"
+);
+
+$("emptyPassword").value="";
+
+}finally{
+
+button.disabled=false;
+button.textContent="SVUOTA SCHEDA";
+
+}
+
+});
+
+// --------------------------------------------------
 // CARICAMENTO SCHEDA
 // --------------------------------------------------
 
@@ -730,6 +1032,11 @@ coppia=data.coppia;
 
 stagioni=data.stagioni||[];
 
+aggiornaRiepilogoSvuotamento();
+
+$("emptySheetForm").reset();
+message("emptySheetMessage","");
+
 // Recupera la gabbia salvata direttamente nella tabella coppie.
 
 const {data:gabbiaData,error:gabbiaError}=await client
@@ -773,8 +1080,6 @@ return;
 }
 
 show("breedersForm");
-
-// Popola il selettore delle stagioni.
 
 stagioni.forEach(s=>{
 

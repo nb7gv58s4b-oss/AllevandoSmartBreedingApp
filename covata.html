@@ -182,9 +182,8 @@ button.secondary{background:#64756a}
 
 <p class="muted">
 Inserisci la data del primo uovo, il numero totale di uova e l'intervallo tra le deposizioni.
-ALLEVANDO creerà automaticamente le righe nella tabella sottostante e calcolerà la data di ciascun uovo.
-Ad esempio, con intervallo 2, il secondo uovo sarà previsto due giorni dopo il primo.
-Le uova già registrate non vengono cancellate se riduci il totale.
+ALLEVANDO creerà automaticamente le righe nella tabella sottostante e calcolerà la data di ciascun nuovo uovo.
+Le uova già registrate non vengono cancellate se riduci il totale e le date modificate manualmente vengono conservate.
 </p>
 
 <label>Note della covata</label>
@@ -392,7 +391,7 @@ function addDays(dateValue,daysValue){
  const days=Number(daysValue);
  if(!Number.isInteger(days)||days<0)return "";
 
- const parts=dateValue.split("-").map(Number);
+ const parts=String(dateValue).slice(0,10).split("-").map(Number);
  if(parts.length!==3||parts.some(Number.isNaN))return "";
 
  const date=new Date(Date.UTC(parts[0],parts[1]-1,parts[2]));
@@ -482,13 +481,13 @@ function dataPrevistaUovo(numero,dataPrimoUovo,intervallo){
  return addDays(dataPrimoUovo,(numero-1)*intervallo)||null;
 }
 
-async function sincronizzaUova(opzioni={}){
+async function sincronizzaUova(){
  if(!covata)return;
 
- const totale=Number($("uova_deposte").value);
+ const valoreTotale=$("uova_deposte").value;
+ const totale=valoreTotale===""?0:Number(valoreTotale);
  const intervallo=Number($("intervallo_deposizione").value);
  const dataPrimoUovo=$("data_deposizione").value||null;
- const ricalcolaDate=opzioni.ricalcolaDate===true;
 
  if(!Number.isInteger(totale)||totale<0){
   throw new Error("Il totale delle uova deve essere un numero intero maggiore o uguale a zero.");
@@ -524,35 +523,30 @@ async function sincronizzaUova(opzioni={}){
  }
 
  if(nuove.length){
-  const {error:insertError}=await client.from("uova").insert(nuove);
+  const {error:insertError}=await client
+   .from("uova")
+   .insert(nuove);
+
   if(insertError)throw insertError;
  }
 
- if(ricalcolaDate&&dataPrimoUovo){
-  for(const egg of presenti){
-   const nuovaData=dataPrevistaUovo(Number(egg.numero),dataPrimoUovo,intervallo);
-
-   if(egg.data_deposizione!==nuovaData){
-    const {error:updateError}=await client
-     .from("uova")
-     .update({data_deposizione:nuovaData})
-     .eq("id",egg.id)
-     .eq("covata_id",covata.id);
-
-    if(updateError)throw updateError;
-   }
-  }
- }
+ /*
+  * Non aggiorniamo le date delle uova già esistenti.
+  * In questo modo le eventuali modifiche manuali dell'allevatore
+  * rimangono conservate.
+  *
+  * Le date automatiche vengono assegnate alle nuove righe.
+  */
 
  const {data:aggiornate,error:reloadError}=await client
   .from("uova")
   .select("*")
-  .eq("covata_id",covata.id);
+  .eq("covata_id",covata.id)
+  .order("numero",{ascending:true});
 
  if(reloadError)throw reloadError;
 
  uova=Array.isArray(aggiornate)?aggiornate:[];
-
 }
 
 /* CONTATORI */
@@ -632,7 +626,7 @@ function renderEggs(){
   const dateInput=makeElement("input");
   dateInput.type="date";
   dateInput.id="egg-date-"+egg.id;
-  dateInput.value=egg.data_deposizione||"";
+  dateInput.value=egg.data_deposizione?String(egg.data_deposizione).slice(0,10):"";
   dateCell.appendChild(dateInput);
   row.appendChild(dateCell);
 
@@ -954,7 +948,7 @@ async function loadSheet(){
    * All'apertura vengono create soltanto le eventuali righe mancanti.
    * Le date delle uova già presenti non vengono sovrascritte.
    */
-  await sincronizzaUova({ricalcolaDate:false});
+  await sincronizzaUova();
 
   setStats();
   renderEggs();
@@ -1127,6 +1121,8 @@ $("covataForm").addEventListener("submit",async e=>{
 
   const uovaFecondeCalcolate=calcolaUovaFeconde();
 
+  /* PRIMO SALVATAGGIO: DATI GENERALI DELLA COVATA */
+
   const {data,error}=await client.rpc("salva_covata_da_tag",{
    p_codice:tag,
    p_covata_id:covata.id,
@@ -1149,32 +1145,40 @@ $("covataForm").addEventListener("submit",async e=>{
   if(error)throw error;
 
   if(data&&!data.successo){
-   throw new Error(data.errore||"Salvataggio non riuscito.");
+   throw new Error(data.errore||"Salvataggio della covata non riuscito.");
   }
 
-  /*
-   * L'intervallo viene salvato direttamente sulla covata.
-   * La colonna è stata aggiunta con la modifica SQL precedente.
-   */
-  const {error:intervalError}=await client
-   .from("covate")
-   .update({intervallo_deposizione:intervallo})
-   .eq("id",covata.id);
+  /* SECONDO SALVATAGGIO: INTERVALLO TRAMITE RPC AUTORIZZATA */
+
+  const {data:intervalData,error:intervalError}=await client.rpc(
+   "salva_intervallo_deposizione_da_tag",
+   {
+    p_codice:tag,
+    p_covata_id:covata.id,
+    p_intervallo:intervallo
+   }
+  );
 
   if(intervalError)throw intervalError;
 
+  if(!intervalData||!intervalData.successo){
+   throw new Error("Salvataggio dell'intervallo tra deposizioni non riuscito.");
+  }
+
   /*
-   * Crea le uova mancanti e ricalcola le date in base
-   * alla data del primo uovo e all'intervallo impostato.
-   * Non elimina mai le uova già registrate.
+   * TERZO PASSAGGIO:
+   * crea soltanto le uova mancanti in base al totale inserito.
+   * Non elimina mai le uova esistenti.
+   * Non sovrascrive le date già registrate.
    */
-  await sincronizzaUova({ricalcolaDate:true});
+
+  await sincronizzaUova();
 
   await refreshData();
 
   message(
    "saveMessage",
-   "Covata salvata. Le uova sono state sincronizzate automaticamente.",
+   "Covata salvata correttamente. Uova sincronizzate: "+uova.length+" registrate.",
    "success"
   );
 

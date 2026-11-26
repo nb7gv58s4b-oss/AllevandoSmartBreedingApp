@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -81,7 +82,6 @@ button.secondary{background:#64756a}
 
 <div class="panel">
 <h2>Riepilogo della covata</h2>
-
 <div class="stats">
 <div class="stat"><strong id="statLaid">0</strong><span>Uova deposte</span></div>
 <div class="stat"><strong id="statEggs">0</strong><span>Uova registrate</span></div>
@@ -94,7 +94,6 @@ button.secondary{background:#64756a}
 <div class="stat"><strong id="statChicks">0</strong><span>Pulli nati / registrati</span></div>
 <div class="stat"><strong id="statWeaned">0</strong><span>Pulli svezzati</span></div>
 </div>
-
 <p id="aggregateInfo" class="muted"></p>
 </div>
 
@@ -121,8 +120,13 @@ button.secondary{background:#64756a}
 </div>
 
 <div>
-<label>Data deposizione</label>
+<label>Data deposizione (primo uovo)</label>
 <input id="data_deposizione" type="date">
+</div>
+
+<div>
+<label>Intervallo tra deposizioni (giorni)</label>
+<input id="intervallo_deposizione" type="number" min="1" step="1" value="1">
 </div>
 
 <div>
@@ -176,7 +180,12 @@ button.secondary{background:#64756a}
 </div>
 </div>
 
-<p class="muted">I tre intervalli sono indipendenti e vengono memorizzati per questa singola covata. Le date previste si aggiornano automaticamente quando modifichi la data di deposizione o i giorni impostati.</p>
+<p class="muted">
+Inserisci la data del primo uovo, il numero totale di uova e l'intervallo tra le deposizioni.
+ALLEVANDO creerà automaticamente le righe nella tabella sottostante e calcolerà la data di ciascun uovo.
+Ad esempio, con intervallo 2, il secondo uovo sarà previsto due giorni dopo il primo.
+Le uova già registrate non vengono cancellate se riduci il totale.
+</p>
 
 <label>Note della covata</label>
 <textarea id="note" rows="4"></textarea>
@@ -187,49 +196,21 @@ button.secondary{background:#64756a}
 </form>
 
 <div class="panel">
-<h2>Registra un nuovo uovo</h2>
-<p class="muted">Ogni uovo viene registrato singolarmente e resta collegato a questa covata.</p>
-
-<form id="eggForm">
-<div class="grid">
-<div>
-<label>Numero uovo</label>
-<input id="newEggNumber" type="number" min="1" step="1" required>
-</div>
-
-<div>
-<label>Data deposizione</label>
-<input id="newEggDate" type="date">
-</div>
-</div>
-
-<label>Esito iniziale</label>
-<select id="newEggStatus">
-<option value="Da verificare">Da verificare</option>
-<option value="Fecondo">Fecondo</option>
-<option value="Non fecondo">Non fecondo</option>
-<option value="Schiuso">Schiuso</option>
-<option value="Non schiuso">Non schiuso</option>
-<option value="Pullo morto nell'uovo">Pullo morto nell'uovo</option>
-</select>
-
-<label>Note</label>
-<textarea id="newEggNotes" rows="2"></textarea>
-
-<button id="addEggButton" type="submit">Registra uovo</button>
-<p id="eggMessage"></p>
-</form>
-</div>
-
-<div class="panel">
 <h2>Uova registrate</h2>
-<p class="muted">Puoi aggiornare la data, l'esito e le note di ogni singolo uovo.</p>
+<p class="muted">
+Le uova vengono create automaticamente in base al totale impostato.
+Puoi aggiornare individualmente la data, l'esito, la condizione e le note.
+Un uovo rotto, espulso o rimosso rimane sempre registrato.
+</p>
 <div id="eggs">Caricamento uova...</div>
 </div>
 
 <div class="panel">
 <h2>Registra un nuovo pullo</h2>
-<p class="muted">Registra i pulli uno alla volta. L'associazione all'uovo di provenienza è facoltativa. La data di inanellamento viene calcolata automaticamente dalla data di nascita e dai giorni impostati per questa covata.</p>
+<p class="muted">
+Registra i pulli uno alla volta. L'associazione all'uovo di provenienza è facoltativa.
+La data di inanellamento viene calcolata automaticamente dalla data di nascita e dai giorni impostati per questa covata.
+</p>
 
 <form id="chickForm">
 <div class="grid">
@@ -287,7 +268,6 @@ button.secondary{background:#64756a}
 
 <label>Note</label>
 <textarea id="newChickNotes" rows="3"></textarea>
-
 <button id="addChickButton" type="submit">Registra pullo</button>
 <p id="newChickMessage"></p>
 </form>
@@ -301,7 +281,6 @@ button.secondary{background:#64756a}
 <button type="button" id="toggleChickEdits" class="secondary" hidden>
 Modifica pulli
 </button>
-
 <div id="chickEdits" hidden></div>
 </div>
 
@@ -352,6 +331,13 @@ const ESITI_FECONDI=[
  "Pullo morto nell'uovo"
 ];
 
+const CONDIZIONI=[
+ "Integro",
+ "Rotto",
+ "Espulso dal nido",
+ "Rimosso dall'allevatore"
+];
+
 function message(id,text,cls=""){
  $(id).textContent=text;
  $(id).className=cls;
@@ -398,7 +384,7 @@ function makeField(labelText,id,type,value,options){
  return {wrap,input};
 }
 
-/* DATE: CALCOLO SENZA PROBLEMI DI FUSO ORARIO */
+/* DATE */
 
 function addDays(dateValue,daysValue){
  if(!dateValue||daysValue===""||daysValue===null||daysValue===undefined)return "";
@@ -430,13 +416,13 @@ function valoreGabbia(){
  return coppia?.gabbia||covata?.gabbia||"";
 }
 
-function validDays(id,label){
+function validDays(id,label,minimum=0){
  const value=$(id).value;
  if(value==="")return null;
 
  const number=Number(value);
- if(!Number.isInteger(number)||number<0){
-  throw new Error(label+" deve essere un numero intero maggiore o uguale a zero.");
+ if(!Number.isInteger(number)||number<minimum){
+  throw new Error(label+" deve essere un numero intero maggiore o uguale a "+minimum+".");
  }
  return number;
 }
@@ -465,6 +451,7 @@ function updateNewChickRingDate(){
 $("data_deposizione").addEventListener("input",updatePredictedDates);
 $("giorni_speratura").addEventListener("input",updatePredictedDates);
 $("giorni_schiusa").addEventListener("input",updatePredictedDates);
+
 $("giorni_inanellamento").addEventListener("input",()=>{
  updateNewChickRingDate();
 
@@ -488,7 +475,87 @@ $("giorni_inanellamento").addEventListener("input",()=>{
 
 $("newChickBirth").addEventListener("input",updateNewChickRingDate);
 
-/* CALCOLO CONTATORI */
+/* GENERAZIONE AUTOMATICA UOVA */
+
+function dataPrevistaUovo(numero,dataPrimoUovo,intervallo){
+ if(!dataPrimoUovo)return null;
+ return addDays(dataPrimoUovo,(numero-1)*intervallo)||null;
+}
+
+async function sincronizzaUova(opzioni={}){
+ if(!covata)return;
+
+ const totale=Number($("uova_deposte").value);
+ const intervallo=Number($("intervallo_deposizione").value);
+ const dataPrimoUovo=$("data_deposizione").value||null;
+ const ricalcolaDate=opzioni.ricalcolaDate===true;
+
+ if(!Number.isInteger(totale)||totale<0){
+  throw new Error("Il totale delle uova deve essere un numero intero maggiore o uguale a zero.");
+ }
+
+ if(!Number.isInteger(intervallo)||intervallo<1){
+  throw new Error("L'intervallo tra le deposizioni deve essere almeno 1 giorno.");
+ }
+
+ const {data:esistenti,error}=await client
+  .from("uova")
+  .select("id,numero,data_deposizione,esito_speratura,note,condizione")
+  .eq("covata_id",covata.id);
+
+ if(error)throw error;
+
+ const presenti=Array.isArray(esistenti)?esistenti:[];
+ const numeriPresenti=new Set(presenti.map(u=>Number(u.numero)));
+
+ const nuove=[];
+
+ for(let numero=1;numero<=totale;numero++){
+  if(!numeriPresenti.has(numero)){
+   nuove.push({
+    covata_id:covata.id,
+    numero:numero,
+    data_deposizione:dataPrevistaUovo(numero,dataPrimoUovo,intervallo),
+    esito_speratura:"Da verificare",
+    condizione:"Integro",
+    note:null
+   });
+  }
+ }
+
+ if(nuove.length){
+  const {error:insertError}=await client.from("uova").insert(nuove);
+  if(insertError)throw insertError;
+ }
+
+ if(ricalcolaDate&&dataPrimoUovo){
+  for(const egg of presenti){
+   const nuovaData=dataPrevistaUovo(Number(egg.numero),dataPrimoUovo,intervallo);
+
+   if(egg.data_deposizione!==nuovaData){
+    const {error:updateError}=await client
+     .from("uova")
+     .update({data_deposizione:nuovaData})
+     .eq("id",egg.id)
+     .eq("covata_id",covata.id);
+
+    if(updateError)throw updateError;
+   }
+  }
+ }
+
+ const {data:aggiornate,error:reloadError}=await client
+  .from("uova")
+  .select("*")
+  .eq("covata_id",covata.id);
+
+ if(reloadError)throw reloadError;
+
+ uova=Array.isArray(aggiornate)?aggiornate:[];
+
+}
+
+/* CONTATORI */
 
 function calcolaUovaFeconde(){
  return uova.filter(u=>
@@ -516,20 +583,27 @@ function setStats(){
  $("statWeaned").textContent=weaned;
  $("uova_feconde").value=fertile;
 
+ const integre=uova.filter(u=>(u.condizione||"Integro")==="Integro").length;
+ const rotte=uova.filter(u=>u.condizione==="Rotto").length;
+ const espulse=uova.filter(u=>u.condizione==="Espulso dal nido").length;
+ const rimosse=uova.filter(u=>u.condizione==="Rimosso dall'allevatore").length;
+
  $("aggregateInfo").textContent=
-  "Le uova feconde sono calcolate automaticamente dagli esiti individuali. "+
-  "Uova deposte: "+(covata?.uova_deposte??0)+
-  "; uova registrate singolarmente: "+uova.length+".";
+  "Uova feconde calcolate dagli esiti individuali. "+
+  "Uova registrate: "+uova.length+
+  "; integre: "+integre+
+  "; rotte: "+rotte+
+  "; espulse: "+espulse+
+  "; rimosse: "+rimosse+".";
 }
 
-/* VISUALIZZAZIONE UOVA IN TABELLA, RAGGRUPPATE PER COVATA */
+/* TABELLA UOVA */
 
 function renderEggs(){
  const area=$("eggs");
  area.replaceChildren();
 
- const title=makeElement("h3","","Covata n. "+(covata?.numero??"—"));
- area.appendChild(title);
+ area.appendChild(makeElement("h3","","Covata n. "+(covata?.numero??"—")));
 
  if(!uova.length){
   area.appendChild(makeElement("p","muted","Nessun uovo registrato in questa covata."));
@@ -541,7 +615,7 @@ function renderEggs(){
  const thead=makeElement("thead");
  const header=makeElement("tr");
 
- ["Numero uovo","Data deposizione","Esito","Note","Azioni"].forEach(label=>{
+ ["Numero uovo","Data deposizione","Esito","Condizione","Note","Azioni"].forEach(label=>{
   header.appendChild(makeElement("th","",label));
  });
 
@@ -581,6 +655,20 @@ function renderEggs(){
   statusSelect.value=egg.esito_speratura||"Da verificare";
   statusCell.appendChild(statusSelect);
   row.appendChild(statusCell);
+
+  const conditionCell=makeElement("td");
+  const conditionSelect=makeElement("select");
+  conditionSelect.id="egg-condition-"+egg.id;
+
+  CONDIZIONI.forEach(value=>{
+   const option=makeElement("option","",value);
+   option.value=value;
+   conditionSelect.appendChild(option);
+  });
+
+  conditionSelect.value=egg.condizione||"Integro";
+  conditionCell.appendChild(conditionSelect);
+  row.appendChild(conditionCell);
 
   const notesCell=makeElement("td");
   const notes=makeElement("textarea");
@@ -757,7 +845,6 @@ function renderChicks(){
   values.forEach(value=>row.appendChild(makeElement("td","",value)));
 
   const ringDateCell=makeElement("td");
-
   const ringDateValue=makeElement(
    "span","",
    formatDate(addDays(chick.data_nascita,$("giorni_inanellamento").value))||"Da calcolare"
@@ -783,7 +870,7 @@ function renderChicks(){
  renderChickCards();
 }
 
-/* CARICAMENTO E AGGIORNAMENTO DATI */
+/* CARICAMENTO DATI */
 
 async function refreshData(){
  const {data,error}=await client.rpc("apri_covata_coppia_da_tag",{
@@ -858,9 +945,17 @@ async function loadSheet(){
    $(key).value=value===null||value===undefined?"":value;
   });
 
+  $("intervallo_deposizione").value=covata.intervallo_deposizione??1;
   $("gabbia").value=valoreGabbia();
 
   updatePredictedDates();
+
+  /*
+   * All'apertura vengono create soltanto le eventuali righe mancanti.
+   * Le date delle uova già presenti non vengono sovrascritte.
+   */
+  await sincronizzaUova({ricalcolaDate:false});
+
   setStats();
   renderEggs();
   renderChicks();
@@ -882,6 +977,7 @@ async function saveEgg(id,button){
   const {error}=await client.from("uova").update({
    data_deposizione:$("egg-date-"+id).value||null,
    esito_speratura:$("egg-status-"+id).value,
+   condizione:$("egg-condition-"+id).value,
    note:$("egg-notes-"+id).value||null
   }).eq("id",id).eq("covata_id",covata.id);
 
@@ -896,48 +992,6 @@ async function saveEgg(id,button){
   button.disabled=false;
  }
 }
-
-/* REGISTRAZIONE NUOVO UOVO */
-
-$("eggForm").addEventListener("submit",async e=>{
- e.preventDefault();
-
- const button=$("addEggButton");
- button.disabled=true;
- message("eggMessage","Registrazione in corso...");
-
- try{
-  const number=Number($("newEggNumber").value);
-
-  if(!Number.isInteger(number)||number<1){
-   throw new Error("Inserisci un numero di uovo valido.");
-  }
-
-  if(uova.some(u=>Number(u.numero)===number)){
-   throw new Error("Questo numero di uovo è già presente nella covata.");
-  }
-
-  const {error}=await client.from("uova").insert({
-   covata_id:covata.id,
-   numero:number,
-   data_deposizione:$("newEggDate").value||null,
-   esito_speratura:$("newEggStatus").value,
-   note:$("newEggNotes").value||null
-  });
-
-  if(error)throw error;
-
-  $("eggForm").reset();
-  await refreshData();
-
-  message("eggMessage","Uovo registrato correttamente.","success");
-
- }catch(error){
-  message("eggMessage","Errore: "+error.message,"error");
- }finally{
-  button.disabled=false;
- }
-});
 
 /* REGISTRAZIONE NUOVO PULLO */
 
@@ -1025,7 +1079,6 @@ async function updateChick(id,button){
   if(error)throw error;
 
   await refreshData();
-
   message("globalMessage","Scheda del pullo aggiornata correttamente.","success");
 
  }catch(error){
@@ -1035,7 +1088,7 @@ async function updateChick(id,button){
  }
 }
 
-/* SALVATAGGIO DATI GENERALI COVATA */
+/* SALVATAGGIO DATI GENERALI E SINCRONIZZAZIONE UOVA */
 
 $("covataForm").addEventListener("submit",async e=>{
  e.preventDefault();
@@ -1054,6 +1107,16 @@ $("covataForm").addEventListener("submit",async e=>{
 
   if(uovaDeposte!==null&&(!Number.isInteger(uovaDeposte)||uovaDeposte<0)){
    throw new Error("Il totale delle uova deposte deve essere un numero intero maggiore o uguale a zero.");
+  }
+
+  const intervallo=validDays(
+   "intervallo_deposizione",
+   "L'intervallo tra le deposizioni",
+   1
+  );
+
+  if(intervallo===null){
+   throw new Error("Inserisci l'intervallo tra le deposizioni.");
   }
 
   const giorniSperatura=validDays("giorni_speratura","I giorni per la speratura");
@@ -1089,9 +1152,31 @@ $("covataForm").addEventListener("submit",async e=>{
    throw new Error(data.errore||"Salvataggio non riuscito.");
   }
 
+  /*
+   * L'intervallo viene salvato direttamente sulla covata.
+   * La colonna è stata aggiunta con la modifica SQL precedente.
+   */
+  const {error:intervalError}=await client
+   .from("covate")
+   .update({intervallo_deposizione:intervallo})
+   .eq("id",covata.id);
+
+  if(intervalError)throw intervalError;
+
+  /*
+   * Crea le uova mancanti e ricalcola le date in base
+   * alla data del primo uovo e all'intervallo impostato.
+   * Non elimina mai le uova già registrate.
+   */
+  await sincronizzaUova({ricalcolaDate:true});
+
   await refreshData();
 
-  message("saveMessage","Modifiche della covata salvate correttamente.","success");
+  message(
+   "saveMessage",
+   "Covata salvata. Le uova sono state sincronizzate automaticamente.",
+   "success"
+  );
 
  }catch(error){
   message("saveMessage","Errore: "+error.message,"error");

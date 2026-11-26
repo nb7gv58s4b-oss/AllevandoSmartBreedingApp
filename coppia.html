@@ -242,10 +242,6 @@ Indica la gabbia in cui si trova stabilmente questa coppia. Il dato verrà ripor
 <div id="covateList" class="muted">Nessuna covata registrata.</div>
 </div>
 
-<!-- ============================================= -->
-<!-- SVUOTA SCHEDA -->
-<!-- ============================================= -->
-
 <section id="emptySheetPanel" class="dangerPanel">
 
 <h2>SVUOTA SCHEDA</h2>
@@ -806,8 +802,6 @@ area.appendChild(card);
 
 });
 
-}
-
 // --------------------------------------------------
 // SVUOTA SCHEDA - PASSWORD E CONFERMA
 // --------------------------------------------------
@@ -880,9 +874,8 @@ throw new Error(
 }
 
 // Riconferma la password attraverso Supabase Auth.
-// La password non viene inviata alla funzione SQL e non viene salvata.
 
-const {error:reauthError}=await client.auth.signInWithPassword({
+const {data:authData,error:reauthError}=await client.auth.signInWithPassword({
 
 email:userData.user.email,
 password:password
@@ -897,14 +890,70 @@ throw new Error(
 
 }
 
+if(!authData?.session?.access_token){
+
+throw new Error(
+"Supabase non ha restituito una nuova sessione autenticata."
+);
+
+}
+
+// Recupera la sessione aggiornata.
+
+const {data:sessionData,error:sessionError}=await client.auth.getSession();
+
+if(sessionError||!sessionData?.session?.access_token){
+
+throw new Error(
+"Impossibile recuperare la sessione aggiornata."
+);
+
+}
+
+// Legge i dati del token aggiornato.
+
+const token=sessionData.session.access_token;
+
+const payload=JSON.parse(
+atob(
+token.split(".")[1]
+.replace(/-/g,"+")
+.replace(/_/g,"/")
+)
+);
+
+// Verifica la recente autenticazione tramite password.
+
+const autenticazionePassword=(payload.amr||[]).find(
+metodo=>metodo.method==="password"
+);
+
+if(!autenticazionePassword||!autenticazionePassword.timestamp){
+
+throw new Error(
+"Supabase non conferma una recente autenticazione tramite password."
+);
+
+}
+
+const secondiTrascorsi=
+Math.floor(Date.now()/1000)-
+Number(autenticazionePassword.timestamp);
+
+if(secondiTrascorsi<0||secondiTrascorsi>300){
+
+throw new Error(
+"La riconferma della password non risulta recente. Ripeti l'operazione."
+);
+
+}
+
 message(
 "emptySheetMessage",
 "Password verificata. Creazione del backup e svuotamento della scheda..."
 );
 
-// Chiamata alla funzione SQL protetta.
-// La funzione verifica anche l'orario di autenticazione
-// e l'effettiva proprietà della coppia.
+// Chiama la funzione SQL con la sessione aggiornata.
 
 const {data,error}=await client.rpc(
 "svuota_scheda_da_tag",
@@ -927,7 +976,7 @@ data?.messaggio||data?.errore||"Svuotamento non completato."
 
 }
 
-// Pulizia immediata della password dal modulo.
+// Pulisce i campi.
 
 $("emptyPassword").value="";
 $("emptyConfirmation").value="";
@@ -937,10 +986,6 @@ message(
 "Scheda svuotata correttamente. Backup creato. La Smart Card è pronta per una nuova configurazione.",
 "success"
 );
-
-// La coppia è stata eliminata.
-// La card rimane assegnata all'allevatore e torna
-// allo stato iniziale di prima configurazione.
 
 coppia=null;
 stagioni=[];
